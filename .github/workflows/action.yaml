@@ -7,8 +7,8 @@ on:
 
 env:
   IMAGE_NAME: dspm
-  ECR_REGISTRY: 956994857092.dkr.ecr.us-east-2.amazonaws.com
-  AWS_REGION: us-east-2
+  ECR_REGISTRY: 956994857092.dkr.ecr.us-east-1.amazonaws.com
+  AWS_REGION: us-east-1
 
 jobs:
   build-and-push:
