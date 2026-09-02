@@ -76,6 +76,17 @@ DB_PORT = os.environ.get("DB_PORT", None)
 DB_USERNAME = os.environ.get("DB_USERNAME", None)
 DB_PASSWORD = os.environ.get("DB_PASSWORD", None)
 
+# SaaS connectors (used when OBJECT_TYPE is GOOGLE_WORKSPACE|GDRIVE or SALESFORCE)
+GOOGLE_SA_KEY_FILE = os.environ.get("GOOGLE_SA_KEY_FILE", None) or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", None)
+GOOGLE_IMPERSONATE_USER = os.environ.get("GOOGLE_IMPERSONATE_USER", None)  # Workspace user whose My Drive is scanned (domain-wide delegation)
+GOOGLE_DRIVE_ID = os.environ.get("GOOGLE_DRIVE_ID", None)  # scan one shared drive instead
+SF_DOMAIN = os.environ.get("SF_DOMAIN", None)  # Salesforce My Domain name (acme) or full https:// instance URL
+SF_CONSUMER_KEY = os.environ.get("SF_CONSUMER_KEY", None)  # Connected App, OAuth client-credentials flow
+SF_CONSUMER_SECRET = os.environ.get("SF_CONSUMER_SECRET", None)
+SF_API_VERSION = os.environ.get("SF_API_VERSION", None)  # default v62.0
+SF_OBJECTS = _list_env("SF_OBJECTS")  # pin the sObjects to scan; empty = all queryable business objects with records
+SF_INCLUDE_FILES = _bool_env("SF_INCLUDE_FILES", "true")  # also scan ContentVersion/Attachment file bodies
+
 # Scanner behaviour (see .env.example for the recommended values and README "Classification")
 LOG_QUERIES = True  # every query issued during DB scans is logged
 REPORT_TOKEN_LIKE_VALUES = _bool_env("REPORT_TOKEN_LIKE_VALUES", "false")  # random tokens with no field/keyword evidence -> Secret.TokenLikeValue

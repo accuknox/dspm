@@ -116,6 +116,26 @@ class BaseScanner(ABC):
                 close()
         return classifier.finish()
 
+
+    def scan_local_file(self, file_path: str, resource_id: str) -> List[Dict[str, Any]]:
+        """
+        Classifies every unit (file, sheet, archive member) of a local file
+        through the shared parsers (src/scanners/files). Used by every
+        connector that materialises objects on temporary disk (S3, Google
+        Drive, Salesforce files).
+        """
+        from src.scanners.files import iter_units  # local import keeps base import-light
+
+        findings: List[Dict[str, Any]] = []
+        for unit_resource_id, stream in iter_units(file_path, resource_id, self.config):
+            findings.extend(
+                self.classify(
+                    unit_resource_id, stream,
+                    location_fn=lambda column, n: f"Column '{column}' ({n} matches)",
+                ),
+            )
+        return self.dedup_findings(findings)
+
     def record_error(self, detail: str) -> None:
         self.stats["errors"] = self.stats.get("errors", 0) + 1
         self.stats.setdefault("error_details", []).append(detail)

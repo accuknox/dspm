@@ -19,6 +19,8 @@ from src.scanners.aws.ddb import DynamoDBScanner
 from src.scanners.aws.s3 import S3Scanner
 from src.scanners.db.mongo import MongoScanner
 from src.scanners.db.sql import SQLScanner
+from src.scanners.saas.gdrive import GoogleDriveScanner
+from src.scanners.saas.salesforce import SalesforceScanner
 from src.utils.logger import get_logger
 
 logger = get_logger("handler")
@@ -45,6 +47,17 @@ DB_OBJECT_TYPES = {
     "MARIADB": "mariadb",
     "MSSQL": "mssql",
     "SQLSERVER": "mssql",
+}
+
+# OBJECT_TYPE values -> canonical connector for SaaS scans
+SAAS_OBJECT_TYPES = {
+    "GDRIVE": "gdrive",
+    "GOOGLEDRIVE": "gdrive",
+    "GOOGLE_DRIVE": "gdrive",
+    "GOOGLEWORKSPACE": "gdrive",
+    "GOOGLE_WORKSPACE": "gdrive",
+    "SALESFORCE": "salesforce",
+    "SFDC": "salesforce",
 }
 
 UPLOAD_RETRIES = 3
@@ -332,6 +345,55 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
                 logger.error(errors[-1])
         except Exception as e:
             errors.append(f"{engine_name} scan failed: {str(e)}")
+            logger.error(errors[-1])
+
+    elif normalized_type in SAAS_OBJECT_TYPES:
+        connector = SAAS_OBJECT_TYPES[normalized_type]
+        try:
+            logger.info(f"Creating {connector} scanner instance for {bucket_name}")
+            if connector == "gdrive":
+                target = {
+                    "sa_key_file": settings.GOOGLE_SA_KEY_FILE,
+                    "impersonate_user": settings.GOOGLE_IMPERSONATE_USER,
+                    "drive_id": settings.GOOGLE_DRIVE_ID,
+                    "sample_limit": settings.SAMPLE_LIMIT,
+                }
+                # OBJECT_NAME names the drive when the GOOGLE_* vars are unset:
+                # a user email (My Drive via domain-wide delegation) or a shared-drive id
+                if not target["impersonate_user"] and not target["drive_id"]:
+                    if "@" in bucket_name:
+                        target["impersonate_user"] = bucket_name
+                    else:
+                        target["drive_id"] = bucket_name
+                saas_scanner = GoogleDriveScanner(engine, config)
+            else:
+                target = {
+                    "domain": settings.SF_DOMAIN or bucket_name,
+                    "consumer_key": settings.SF_CONSUMER_KEY,
+                    "consumer_secret": settings.SF_CONSUMER_SECRET,
+                    "api_version": settings.SF_API_VERSION,
+                    "objects": settings.SF_OBJECTS or None,
+                    "include_files": settings.SF_INCLUDE_FILES,
+                    "sample_limit": settings.SAMPLE_LIMIT,
+                }
+                saas_scanner = SalesforceScanner(engine, config)
+
+            # One entry per Drive file / sObject / attached file, clean ones included,
+            # checkpointed after each just like the S3 and DB loops above
+            for _resource_id, unit_name, unit_findings in saas_scanner.iter_scan(target):
+                final_json["findings"][unit_name] = club_findings(unit_findings)
+                final_json["files_scanned"] += 1
+                with findings_file.open("w") as f:
+                    json.dump(final_json, f, indent=4, default=str)
+
+            scan_errors = saas_scanner.stats.get("errors", 0)
+            if scan_errors:
+                details = saas_scanner.stats.get("error_details") or []
+                suffix = ": " + "; ".join(details[:10]) if details else ", see logs"
+                errors.append(f"{scan_errors} error(s) during {connector} scan{suffix}")
+                logger.error(errors[-1])
+        except Exception as e:
+            errors.append(f"{connector} scan failed: {str(e)}")
             logger.error(errors[-1])
 
     else:

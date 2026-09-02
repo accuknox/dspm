@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 import boto3
 
 from src.scanners.base import BaseScanner
-from src.scanners.files import iter_units
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -82,18 +81,6 @@ class S3Scanner(BaseScanner):
                 shutil.rmtree(temp_dir)
             except Exception:
                 pass
-
-    def scan_local_file(self, file_path: str, resource_id: str) -> List[Dict[str, Any]]:
-        """Classifies every unit (file, sheet, archive member) of a local file."""
-        findings: List[Dict[str, Any]] = []
-        for unit_resource_id, stream in iter_units(file_path, resource_id, self.config):
-            findings.extend(
-                self.classify(
-                    unit_resource_id, stream,
-                    location_fn=lambda column, n: f"Column '{column}' ({n} matches)",
-                ),
-            )
-        return self.dedup_findings(findings)
 
     def list_all_files(self, bucket: str):
         paginator = self.client.get_paginator("list_objects_v2")

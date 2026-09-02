@@ -9,6 +9,8 @@ from src.scanners.aws.rds import RDSScanner
 from src.scanners.aws.s3 import S3Scanner
 from src.scanners.db.mongo import MongoScanner
 from src.scanners.db.sql import SQLScanner
+from src.scanners.saas.gdrive import GoogleDriveScanner
+from src.scanners.saas.salesforce import SalesforceScanner
 from src.utils.aws import get_secret
 from src.utils.logger import get_logger
 
@@ -24,6 +26,8 @@ SQL_SCAN_TYPES = {
     "sqlserver": "mssql",
 }
 MONGO_SCAN_TYPES = {"mongo", "mongodb", "documentdb"}
+GDRIVE_SCAN_TYPES = {"gdrive", "googledrive", "google_drive", "googleworkspace", "google_workspace"}
+SALESFORCE_SCAN_TYPES = {"salesforce", "sfdc"}
 
 
 def resolve_db_credentials(target: Dict[str, Any]) -> Dict[str, Any]:
@@ -35,7 +39,10 @@ def resolve_db_credentials(target: Dict[str, Any]) -> Dict[str, Any]:
     if secret_arn:
         secret_data = get_secret(secret_arn)
         if secret_data:
-            for key in ("username", "password", "host", "port", "database", "uri"):
+            for key in (
+                "username", "password", "host", "port", "database", "uri",
+                "consumer_key", "consumer_secret", "domain", "access_token", "instance_url",
+            ):
                 target[key] = target.get(key) or secret_data.get(key)
     return target
 
@@ -105,6 +112,15 @@ def process_single_event(event: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     elif scan_type == "dynamodb":
         scanner = DynamoDBScanner(engine, config)
+        return scanner.scan(target)
+
+    elif scan_type in GDRIVE_SCAN_TYPES:
+        scanner = GoogleDriveScanner(engine, config)
+        return scanner.scan(target)
+
+    elif scan_type in SALESFORCE_SCAN_TYPES:
+        target = resolve_db_credentials(target)
+        scanner = SalesforceScanner(engine, config)
         return scanner.scan(target)
 
     else:

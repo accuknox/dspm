@@ -94,7 +94,10 @@ def column_verdict(
     needed = policy.column_min_matches if min_matches is None else min_matches
     if profile.matches < needed or profile.distinct_count < needed:
         return None
-    ratio = profile.matches / sampled
+    # For a weak single-check-digit ID whose pattern matches any N-digit number, only the
+    # validated share is meaningful: a phone column pattern-matches 100% but ~9% validate.
+    numerator = profile.validated if policy.column_requires_validation else profile.matches
+    ratio = numerator / sampled
     if ratio < threshold:
         return None
     tier = promote(profile.majority_tier())

@@ -12,6 +12,7 @@ import zipfile
 from src.engine import tokens as tk
 from src.engine.detector import DetectionEngine
 from src.engine.entropy import calculate_entropy
+from src.engine.policy import policy_for
 from src.pipeline import Cell, Record, TextBlob, UnitClassifier, collapse_indices, document_record, flatten
 from src.scanners.base import BaseScanner
 from src.scanners.files import iter_units
@@ -150,6 +151,53 @@ def test_count_promotion_is_off_for_word_shaped_patterns():
     clf.feed(TextBlob("swift code: CORPDEXX", location="Page 1"))
     out = clf.finish()
     assert [(f["detector"], f["confidence"]) for f in out] == [("SWIFT/BIC", "likely")]
+
+
+def test_count_promotion_is_off_for_weak_checksum_national_ids():
+    # A column of 10-digit phone numbers with no phone header: ~1 in 11 pass the NHS
+    # mod-11 check by chance, so a real phone column yields ~10 "valid" NHS numbers.
+    # Count must NOT promote them - only column density / context can (regression:
+    # r@accuknox.com Drive scan reported a 'Status' column of phones as likely UK_NHS).
+    from src.engine.recognizers.gb_es_it_tr import _validate_uk_nhs
+
+    # A realistic Indian-mobile column: most fail the NHS check, ~1 in 11 pass it. The
+    # column's NHS match ratio stays well under the density threshold, so only the (now
+    # disabled) count path could have promoted the coincidental passers.
+    phones = [str(n) for n in range(9000000000, 9000000120)]
+    passers = [p for p in phones if _validate_uk_nhs(p)]
+    assert len(passers) >= 10  # enough coincidental passers to have tripped count promotion
+    clf = UnitClassifier(_engine(), "unit://sheet", unit_name="Responses")
+    for i, p in enumerate(phones):
+        clf.feed(Record([Cell(p, "Unnamed: 6", f"Row {i}")]))
+    assert [f for f in clf.finish() if f["detector"] == "UK_NHS"] == []
+    assert not policy_for("UK_NHS", "Regional Compliance").count_promotion
+
+
+def test_weak_checksum_id_column_needs_validated_density():
+    # GB_UTR/UK_NHS patterns match every 10-digit number, so a phone column pattern-matches
+    # 100% while only ~1 in 11 pass the mod-11 check. Column classification must count the
+    # validated share, not raw matches, so the phone column does not become a UTR/NHS column.
+    from src.engine.recognizers import get_rule
+    assert policy_for("GB_UTR", "Regional Compliance").column_requires_validation
+    val = get_rule("GB_UTR").validator
+    phones = [str(n) for n in range(9000000000, 9000000120)]
+    assert sum(1 for p in phones if val(p) is True) >= 8  # enough passers to classify by raw matches
+    clf = UnitClassifier(_engine(), "unit://sheet", unit_name="Responses")
+    for i, p in enumerate(phones):
+        clf.feed(Record([Cell(p, "Status", f"Row {i}")]))
+    assert [f for f in clf.finish() if f["detector"] == "GB_UTR"] == []
+    # a genuine column of validated UTRs under a 'utr' header still classifies
+    valid = []
+    k = 1000000000
+    while len(valid) < 8:
+        if val(str(k)) is True:
+            valid.append(str(k))
+        k += 1
+    clf = UnitClassifier(_engine(), "unit://sheet", unit_name="Tax")
+    for i, v in enumerate(valid):
+        clf.feed(Record([Cell(v, "utr", f"R{i}")]))
+    out = [f for f in clf.finish() if f["detector"] == "GB_UTR"]
+    assert out and all(f["confidence"] == "very_likely" for f in out)
 
 
 def test_checksum_alone_is_possible():

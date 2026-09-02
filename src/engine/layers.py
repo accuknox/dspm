@@ -537,6 +537,13 @@ def _credential_value_shape_ok(value: str) -> bool:
     segment looks machine-generated (sk_live_4eC39HqLyjWDarjtT1zdp7dc yes,
     db-credentials-prod no).
     """
+    # A dotted member-expression is source code rather than a credential value - e.g.
+    # apiKeyInput.value.trim, this.state.token, process.env.API_KEY. Reject unless a
+    # segment looks machine-generated.
+    if re.fullmatch(r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+", value) and not any(
+        tk.is_random_looking(seg) for seg in value.split(".")
+    ):
+        return False
     info = tk.analyze_token(value, 8)
     if info.kind in ("path", "date", "pem"):
         return False

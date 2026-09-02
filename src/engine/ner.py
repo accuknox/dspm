@@ -69,6 +69,15 @@ def available() -> bool:
     if _LOAD_FAILED or os.environ.get("NER_ENABLED", "true").strip().lower() in ("0", "false", "no", "off"):
         return False
     try:
+        import warnings
+
+        # Upstream tech debt, not ours: curated-transformers 0.1.1 (the only
+        # version the trf model accepts) calls torch.jit.script at import, and
+        # torch has no TorchScript support on Python 3.14 yet, so it emits a
+        # FutureWarning there. Inference is verified working (tests + corpus);
+        # remove this filter once curated-transformers or torch ships 3.14
+        # support. Scoped to exactly that message so other warnings surface.
+        warnings.filterwarnings("ignore", message=r".*torch\.jit\.script.*", category=FutureWarning)
         import spacy
     except Exception:
         _LOAD_FAILED = True

@@ -125,6 +125,21 @@ def test_scan_entropy():
     assert findings[0]["detector"] == "High Entropy Secret"
 
 
+def test_credential_assignment_ignores_code_expressions():
+    # A dotted member-expression on the RHS is source code, not a secret value
+    # (regression: ak-prompt-fw browser plugin reported apiKeyInput.value.trim as API Key).
+    for line in (
+        "const apiKey = apiKeyInput.value.trim();",
+        "apiKey: apiKeyInput.value",
+        "let x = config.apiKey.secret",
+        "const token = this.state.token",
+        "api_key = process.env.API_KEY",
+    ):
+        assert scan_credentials(line) == [], line
+    # a genuine assigned secret still fires
+    assert "API Key" in [f["detector"] for f in scan_credentials("api_key = aVeryLongRandomSecret0xDEADbeef99")]
+
+
 def test_detector_tuning():
     # git SHA1 (40 lowercase hex) must not fire the AWS secret detector
     findings = scan_credentials("commit: 3f786850e387550fdab836ed7e6dc881de23001b")

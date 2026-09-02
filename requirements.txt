@@ -52,3 +52,7 @@ regex==2026.9.3
 sympy==1.14.0
 https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.8.0/en_core_web_trf-3.8.0-py3-none-any.whl
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+
+google-auth==2.57.0
+pyasn1==0.6.4
+pyasn1_modules==0.4.2

@@ -100,6 +100,32 @@ All non-`system.*` collections of the database are discovered and scanned, up to
 
 > DynamoDB is currently only available through the master handler, not through worker mode.
 
+### Google Workspace (Drive)
+
+| Variable | Required | Description |
+|---|---|---|
+| `OBJECT_TYPE` | yes | `GOOGLE_WORKSPACE` (or `GDRIVE`, `GOOGLE_DRIVE`, `GOOGLEWORKSPACE`) |
+| `OBJECT_NAME` | yes | What to scan when the `GOOGLE_*` variables below are unset: a user email (their My Drive) or a shared-drive id |
+| `GOOGLE_SA_KEY_FILE` | yes* | Path to the service-account key JSON (\* or set `GOOGLE_APPLICATION_CREDENTIALS`; Application Default Credentials when neither is set) |
+| `GOOGLE_IMPERSONATE_USER` | no | Workspace user whose My Drive is scanned (requires domain-wide delegation) |
+| `GOOGLE_DRIVE_ID` | no | One shared drive to scan instead |
+
+Setup (the model the DSPM vendors document): create a GCP service account, enable the Drive API, and authorize the account in the Google Admin console for domain-wide delegation with the single read-only scope `https://www.googleapis.com/auth/drive.readonly` - the scanner cannot modify data by construction. Google-native files are exported (Docs → `.docx`, Sheets → `.xlsx` so every sheet is scanned - the CSV export is first-sheet-only - Slides → text; the Drive API caps exports at 10 MB), everything else is downloaded as-is; both go through the same file parsers as S3 objects, one Drive file per findings entry. Files over 100 MB are skipped.
+
+### Salesforce
+
+| Variable | Required | Description |
+|---|---|---|
+| `OBJECT_TYPE` | yes | `SALESFORCE` (or `SFDC`) |
+| `OBJECT_NAME` | yes | My Domain name (`acme` for `acme.my.salesforce.com`) or the full instance URL; `SF_DOMAIN` overrides it |
+| `SF_CONSUMER_KEY` | yes | Connected App credentials (OAuth 2.0 client-credentials flow) |
+| `SF_CONSUMER_SECRET` | yes | |
+| `SF_OBJECTS` | no | Pin the sObjects to scan (comma-separated or JSON list); default: every queryable business object that holds records |
+| `SF_INCLUDE_FILES` | no | `true` (default): also scan the files attached to records - the latest `ContentVersion` of every File plus classic `Attachment` bodies - through the file parsers |
+| `SF_API_VERSION` | no | Default `v62.0` |
+
+Setup: a Connected App with the client-credentials flow enabled, run as an integration user holding a permission set with "API Enabled", "View All Data" and "Query All Files". One sObject is one unit, scanned like a table: text-typed fields only (string / textarea / email / phone / url / picklist), up to `SAMPLE_LIMIT` records per object. `*Share` / `*History` / `*Feed` / `*ChangeEvent`, `Apex*` / `Datacloud*` and other system objects are excluded, and empty objects are skipped via `limits/recordCount`. Incremental scans filter on `SystemModstamp`.
+
 ### Example `.env` (PostgreSQL)
 
 ```bash
@@ -187,6 +213,43 @@ Same fields as the SQL engines above (set `engine` to one of `postgres/mysql/mar
 | `sample_limit` | no | Max items (default 10000) |
 
 Uses ambient AWS credentials (Lambda role / environment). DynamoDB Stream CDC batches are handled automatically when the Lambda is wired to a stream.
+
+### `scan_type: "google_workspace" | "gdrive" | "google_drive"`
+
+```json
+{
+  "scan_type": "google_workspace",
+  "target": {
+    "sa_key_file": "/path/key.json",
+    "impersonate_user": "user@example.com",
+    "drive_id": "0AbCd...",
+    "folder_id": "1XyZ...",
+    "max_files": 500,
+    "last_scan_time": "2026-08-01T00:00:00Z"
+  }
+}
+```
+
+`impersonate_user` (My Drive via domain-wide delegation) or `drive_id` (a shared drive) selects the corpus; `folder_id` restricts to one folder; omit `sa_key_file` to use Application Default Credentials.
+
+### `scan_type: "salesforce" | "sfdc"`
+
+```json
+{
+  "scan_type": "salesforce",
+  "target": {
+    "domain": "acme",
+    "consumer_key": "3MVG9...",
+    "consumer_secret": "...",
+    "objects": ["Contact", "Lead"],
+    "include_files": true,
+    "sample_limit": 10000,
+    "last_scan_time": "2026-08-01T00:00:00Z"
+  }
+}
+```
+
+Like the database targets, `password_secret` (an AWS Secrets Manager ARN) can supply `consumer_key` / `consumer_secret` / `domain` - or a ready `access_token` + `instance_url` - instead of inline values.
 
 ### `config` keys (all scan types)
 

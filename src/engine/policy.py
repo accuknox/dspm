@@ -34,6 +34,11 @@ Fields
     column_ratio        share of a column's sampled non-empty values that must match
                         before the column is classified as this detector (Sentra: 0.5)
     column_min_matches  distinct matching values needed before a column verdict
+    column_requires_validation  classify a column on the share of *validated* values, not raw
+                        pattern matches. For a weak single-check-digit ID matched on a bare
+                        digit run (NHS/UTR mod-11), the pattern matches every N-digit number,
+                        so a phone column is 100% "matches" but only ~9% validate - counting
+                        validated values keeps the column below threshold.
     column_classify     False for detectors whose column verdict is meaningless
                         (a column of random-looking strings is not a column of secrets)
     min_count           distinct `possible`-tier hits in one unit (or in one column that
@@ -89,6 +94,7 @@ class DetectorPolicy:
     column_ratio: float = 0.5
     column_min_matches: int = 3
     column_classify: bool = True
+    column_requires_validation: bool = False
     min_count: int = 10
     count_promotion: bool = True
     identity: bool = False
@@ -117,8 +123,13 @@ CATEGORY_DEFAULTS: Dict[str, DetectorPolicy] = {
     "Entropy-Based Secret Detection": DetectorPolicy(context=CONTEXT_REQUIRED, column_classify=False, count_promotion=False),
     "PII": DetectorPolicy(context=CONTEXT_BOOST, identity=True),
     "Financial Data": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_BANK_SIBLINGS),
-    "Regional Compliance": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_IDENTITY_SIBLINGS),
-    "Healthcare Data (PHI)": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_HEALTH_SIBLINGS),
+    # count_promotion is off: these are matched on bare digit runs with a single check digit
+    # (NHS mod-11, national-ID mod-10/11), which ~1-in-10 random numbers pass, so an absolute
+    # count of matches is chance-dominated in any numeric column (a column of phone numbers
+    # yields ~10 "valid" NHS numbers). Genuine columns are still promoted by column density
+    # (>=50% of the column), siblings and record-level identity corroboration - not by count.
+    "Regional Compliance": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_IDENTITY_SIBLINGS, count_promotion=False),
+    "Healthcare Data (PHI)": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_HEALTH_SIBLINGS, count_promotion=False),
     "Technical Identifier": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, count_promotion=False),
 }
 
@@ -134,6 +145,12 @@ POLICIES: Dict[str, DetectorPolicy] = {
     "CA_POSTAL_CODE": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, column_ratio=0.8),
     "UK_POSTCODE": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, column_ratio=0.8),
     "DE_PLZ": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, column_ratio=0.8),
+    # --- weak single-check-digit IDs matched on a bare digit run: their pattern matches every
+    # 10-digit number, so classify the column on validated density (a phone column pattern-matches
+    # 100% but only ~9% pass the mod-11 check). Regression: r@accuknox.com Drive scan reported
+    # phone columns as UK_NHS / GB_UTR.
+    "UK_NHS": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_HEALTH_SIBLINGS, count_promotion=False, column_requires_validation=True),
+    "GB_UTR": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_IDENTITY_SIBLINGS, count_promotion=False, column_requires_validation=True),
     # --- Financial
     "Credit Card": DetectorPolicy(context=CONTEXT_REQUIRED, identity_corroboration=True, negative_fields=_TECHNICAL_NUMBER_FIELDS, siblings=_CARD_SIBLINGS),
     "IBAN": DetectorPolicy(context=CONTEXT_NONE, identity_corroboration=True, siblings=_BANK_SIBLINGS),
