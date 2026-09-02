@@ -8947,6 +8947,62 @@
         "Credentials and Secrets",
         "Entropy-Based Secret Detection"
       ]
+    },
+    {
+      "id": "gdrive-ukvrm-0001",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "us06web",
+      "kind": "fp",
+      "old_detector": "UK_VEHICLE_REGISTRATION",
+      "forbid_detectors": [
+        "UK_VEHICLE_REGISTRATION"
+      ],
+      "forbid_categories": [
+        "Regional Compliance"
+      ]
+    },
+    {
+      "id": "gdrive-ukvrm-0002",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "DC02-nsg",
+      "kind": "fp",
+      "old_detector": "UK_VEHICLE_REGISTRATION",
+      "forbid_detectors": [
+        "UK_VEHICLE_REGISTRATION"
+      ],
+      "forbid_categories": [
+        "Regional Compliance"
+      ]
+    },
+    {
+      "id": "gdrive-ukvrm-0003",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "VM12-new",
+      "kind": "fp",
+      "old_detector": "UK_VEHICLE_REGISTRATION",
+      "forbid_detectors": [
+        "UK_VEHICLE_REGISTRATION"
+      ],
+      "forbid_categories": [
+        "Regional Compliance"
+      ]
+    },
+    {
+      "id": "gdrive-vin-0001",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "FDR48131785579054",
+      "kind": "fp",
+      "old_detector": "VIN",
+      "forbid_detectors": [
+        "VIN"
+      ],
+      "forbid_categories": [
+        "PII"
+      ]
     }
   ],
   "units_description": "Unit-level cases: a labelled column/document run through UnitClassifier (not one value). The engine-level 'samples' cannot express column-density / count logic, which is where the highest-value real false positives live (phone columns tripping weak-checksum national IDs).",

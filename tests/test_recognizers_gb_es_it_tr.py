@@ -285,14 +285,16 @@ def test_uk_postcode_field_name():
 def test_uk_vehicle_registration():
     rule = _rule("UK_VEHICLE_REGISTRATION")
     valid = [
-        # current format (2001+): validator confirms the age identifier -> 1.0
-        ("AB51 ABC", [(0, 8, 1.0)]),
-        ("BD62XYZ", [(0, 7, 1.0)]),
-        ("LN14-HGT", [(0, 8, 1.0)]),
-        ("aa02 aaa", [(0, 8, 1.0)]),
-        ("My car reg is AB51 ABC and it expires", [(14, 22, 1.0)]),
-        ("Vehicles AB51 ABC and BD62XYZ were seen", [(9, 17, 1.0), (22, 29, 1.0)]),
-        ("AB70 DEF", [(0, 8, 1.0)]),
+        # current format (2001+): the age identifier is a plausibility range, not a checksum, so a
+        # plausible age keeps the pattern score (validator None) - it reaches likely/very_likely via a
+        # vehicle field name or a nearby keyword, not on the bare format (which collides with infra tokens)
+        ("AB51 ABC", [(0, 8, 0.3)]),
+        ("BD62XYZ", [(0, 7, 0.3)]),
+        ("LN14-HGT", [(0, 8, 0.3)]),
+        ("aa02 aaa", [(0, 8, 0.3)]),
+        ("My car reg is AB51 ABC and it expires", [(14, 22, 0.65)]),  # nearby "reg" keyword boosts it
+        ("Vehicles AB51 ABC and BD62XYZ were seen", [(9, 17, 0.3), (22, 29, 0.3)]),
+        ("AB70 DEF", [(0, 8, 0.3)]),
         # prefix format (1983-2001): validator None -> pattern score
         ("A123 BCD", [(0, 8, 0.2)]),
         ("K1 ABC", [(0, 6, 0.2)]),

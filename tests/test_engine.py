@@ -125,6 +125,20 @@ def test_scan_entropy():
     assert findings[0]["detector"] == "High Entropy Secret"
 
 
+def test_weak_check_digit_needs_context():
+    # VIN's ISO check digit is 1/11, so a 17-char reference passes it by chance. A validated match
+    # with no context/field stays `possible` (regression: FDR48131785579054, a doc reference, was
+    # reported very_likely). A real VIN reaches likely/very_likely via a field name or keyword.
+    from src.engine.recognizers import weak_validation_detectors
+
+    assert "VIN" in weak_validation_detectors()
+    engine = DetectionEngine()
+    assert engine.scan_text("FDR48131785579054") == []  # dropped at the default `likely` floor
+    assert [f["confidence"] for f in engine.scan_text("FDR48131785579054", min_confidence="possible")] == ["possible"]
+    assert [f["confidence"] for f in engine.scan_text("1HGCM82643C675372", field_name="vin")] == ["very_likely"]
+    assert "VIN" in [f["detector"] for f in engine.scan_text("chassis number 1HGCM82643C675372")]
+
+
 def test_large_base64_blob_scans_fast():
     # Regression: a big base64 blob (a .drawio diagram is base64 XML) made EMAIL_REGEX backtrack
     # O(n^2) - a 48 KB blob took ~4s, a 15 MB file hours. The bounded local part keeps it linear.

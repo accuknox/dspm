@@ -56,5 +56,11 @@ def rule_names() -> List[str]:
     return [r.name for r in load_all()]
 
 
+def weak_validation_detectors() -> frozenset:
+    """Detectors whose validator is a weak single check digit (~1/10-1/11 pass rate on a shaped
+    value) - a validated match is not strong evidence on its own (see Rule.weak_validation)."""
+    return frozenset(r.name for r in load_all() if getattr(r, "weak_validation", False))
+
+
 def regions() -> List[str]:
     return sorted({r.region for r in load_all() if r.region})

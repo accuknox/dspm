@@ -90,10 +90,11 @@ def _validate_geo(text: str) -> Optional[bool]:
     return None if (lat, lon) != (0.0, 0.0) else False
 
 
-def _rule(name, description, patterns, context, validator=None, field_hint=None, examples=(), category=_PII, severity="Low"):
+def _rule(name, description, patterns, context, validator=None, field_hint=None, examples=(), category=_PII, severity="Low", weak_validation=False):
     return Rule(
         name=name, category=category, severity=severity, region=None, description=description,
         patterns=patterns, context=context, validator=validator, field_hint=field_hint, examples=list(examples),
+        weak_validation=weak_validation,
     )
 
 
@@ -115,6 +116,7 @@ RULES = [
         [Pattern("VIN", r"\b[A-HJ-NPR-Z0-9]{8}[0-9X][A-HJ-NPR-Z0-9]{8}\b", 0.2)],
         ["vin", "vehicle identification", "chassis", "chassis number", "frame number", "vehicle"],
         _validate_vin, r"(?<![a-z])vin(?![a-z])|chassis|vehicle_?id", ["1HGCM82643C675372", "WVWZZZ3C69E848035"],  # pragma: allowlist secret
+        weak_validation=True,  # the ISO check digit is 1/11; a 17-char reference passes it by chance
     ),
     _rule(
         "PASSPORT_MRZ", "Passport machine-readable zone: line 1 (P< issuer names) and line 2 (number, nationality, birth date, expiry with check digits).",

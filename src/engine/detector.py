@@ -143,6 +143,19 @@ def _placeholder_number(value: str) -> bool:
     return digits in straight or digits in straight[::-1]
 
 
+_WEAK_VALIDATION: Optional[frozenset] = None
+
+
+def _weak_validation_detectors() -> frozenset:
+    """Cached set of detectors with a weak single check digit (Rule.weak_validation); loaded lazily
+    so importing the engine does not pull in every recognizer pack."""
+    global _WEAK_VALIDATION
+    if _WEAK_VALIDATION is None:
+        from src.engine.recognizers import weak_validation_detectors
+        _WEAK_VALIDATION = weak_validation_detectors()
+    return _WEAK_VALIDATION
+
+
 def _bare_number(value: str) -> bool:
     """Digits (or 1-2 letters + digits) with no separators, 6-20 digits: an id, a timestamp, a counter."""
     return re.fullmatch(r"[A-Za-z]{0,2}\d{6,20}", value) is not None
@@ -274,7 +287,10 @@ class DetectionEngine:
         """
         value = str(f.get("value", ""))
         if f.get("pattern") is not None and not f.get("context_word") and not f.get("field_hint"):
-            if _bare_number(value) or (f.get("validated") and _digit_groups(value)):
+            # bare digit run, checksum-validated digit groups, or a weak-check-digit detector
+            # (VIN's ISO digit passes 1/11) - a validated match is not strong evidence alone
+            weak = f.get("validated") and f["detector"] in _weak_validation_detectors()
+            if _bare_number(value) or (f.get("validated") and _digit_groups(value)) or weak:
                 f["score"] = min(f["score"], 0.75)
                 f["needs_context"] = True
         hinted_id = f.get("validated") and f.get("field_hint")

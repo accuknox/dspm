@@ -343,6 +343,10 @@
             "references": [
                 "https://en.wikipedia.org/wiki/Luhn_algorithm",
                 "https://en.wikipedia.org/wiki/Payment_card_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "Bank Account": {
@@ -368,6 +372,10 @@
             "sample_value": "12345678",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IBAN": {
@@ -390,6 +398,10 @@
             "sample_value": "GB82WEST12345698765432",
             "references": [
                 "https://en.wikipedia.org/wiki/International_Bank_Account_Number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SWIFT/BIC": {
@@ -398,7 +410,10 @@
             "category": "Financial Data",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "GLBA (financial privacy)",
+                "PSD2 (EU payment services)"
+            ],
             "description": "SWIFT/BIC codes identify financial institutions and are public directory data. Risk arises when they are stored alongside account numbers, completing a wire-transfer profile.",
             "remediation_advice": "Review whether adjacent columns hold account data; institution codes alone need no action.",
             "cwe": [
@@ -408,6 +423,10 @@
             "sample_value": "DEUTDEFF",
             "references": [
                 "https://en.wikipedia.org/wiki/ISO_9362"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "Healthcare Data Detection": {
@@ -436,6 +455,10 @@
             ],
             "aliases": [
                 "PHI.HealthData"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US SSN": {
@@ -460,6 +483,10 @@
             "sample_value": "219-09-9999",
             "references": [
                 "https://en.wikipedia.org/wiki/Social_Security_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CA SIN": {
@@ -482,6 +509,10 @@
             "references": [
                 "https://en.wikipedia.org/wiki/Social_insurance_number",
                 "https://en.wikipedia.org/wiki/Luhn_algorithm"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN Aadhaar": {
@@ -506,6 +537,10 @@
             "references": [
                 "https://en.wikipedia.org/wiki/Aadhaar",
                 "https://en.wikipedia.org/wiki/Verhoeff_algorithm"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "GB NINO": {
@@ -528,6 +563,10 @@
             "sample_value": "AB123456C",
             "references": [
                 "https://en.wikipedia.org/wiki/National_Insurance_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN PASSPORT": {
@@ -550,6 +589,10 @@
             "sample_value": "A2096457",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN PAN": {
@@ -572,6 +615,10 @@
             "sample_value": "ABCPE1234F",
             "references": [
                 "https://en.wikipedia.org/wiki/Permanent_account_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN VOTER ID": {
@@ -593,6 +640,10 @@
             "sample_value": "ABC1234567",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN GST": {
@@ -601,7 +652,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "India DPDP Act 2023 (where personal)",
+                "India CGST Act 2017"
+            ],
             "description": "A GSTIN identifies a registered business and is publicly searchable; sensitivity is low in isolation but rises in aggregate with financial records.",
             "remediation_advice": "Review whether the GSTIN is stored alongside financial records that require protection.",
             "cwe": [
@@ -611,6 +665,10 @@
             "sample_value": "22AAAAA0000A1Z5",
             "references": [
                 "https://en.wikipedia.org/wiki/Goods_and_Services_Tax_(India)"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "Date of Birth": {
@@ -634,6 +692,10 @@
             "sample_value": "1985-04-12",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "Address": {
@@ -657,6 +719,10 @@
             "sample_value": "221B Baker Street, London",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "Phone Number": {
@@ -681,6 +747,10 @@
             "sample_value": "+1-202-555-0143",
             "references": [
                 "https://github.com/google/libphonenumber"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "Email": {
@@ -709,6 +779,10 @@
             ],
             "aliases": [
                 "PII.EmailAddress"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PII.IPAddress": {
@@ -736,6 +810,10 @@
             ],
             "aliases": [
                 "IP_ADDRESS"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PII.PersonName": {
@@ -760,6 +838,10 @@
             "sample_value": "Jane Smith",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PII.UserIdentifier": {
@@ -781,6 +863,10 @@
             "sample_value": "jsmith92",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ABA_ROUTING_NUMBER": {
@@ -789,7 +875,10 @@
             "category": "Financial Data",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "GLBA (financial privacy)",
+                "NACHA Operating Rules"
+            ],
             "description": "ABA routing numbers identify US financial institutions and are public directory data. Risk arises when stored alongside account numbers, completing an ACH transfer profile.",
             "remediation_advice": "Review whether adjacent columns hold account numbers; routing numbers alone need no action.",
             "cwe": [
@@ -799,6 +888,10 @@
             "sample_value": "021000021",
             "references": [
                 "https://en.wikipedia.org/wiki/ABA_routing_transit_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_ITIN": {
@@ -821,6 +914,10 @@
             "sample_value": "912-70-1234",
             "references": [
                 "https://en.wikipedia.org/wiki/Individual_Taxpayer_Identification_Number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_PASSPORT": {
@@ -842,6 +939,10 @@
             "sample_value": "896584512",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_DRIVER_LICENSE": {
@@ -864,6 +965,10 @@
             "sample_value": "A1234567",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_MBI": {
@@ -885,6 +990,10 @@
             "sample_value": "1EG4-TE5-MK73",
             "references": [
                 "https://www.cms.gov/medicare/new-medicare-card/understanding-the-mbi-with-format.pdf"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_NPI": {
@@ -893,7 +1002,9 @@
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "HIPAA 45 CFR 164 (identifiers)"
+            ],
             "description": "National Provider Identifiers name healthcare providers and are published in the public NPPES registry. Risk arises only alongside patient data.",
             "remediation_advice": "Provider identifiers are public directory data; review adjacent columns for patient data.",
             "cwe": [
@@ -903,6 +1014,10 @@
             "sample_value": "1234567893",
             "references": [
                 "https://en.wikipedia.org/wiki/National_Provider_Identifier"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "MEDICAL_LICENSE": {
@@ -911,7 +1026,10 @@
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "HIPAA 45 CFR 164 (identifiers)",
+                "US state medical-board licensing"
+            ],
             "description": "Medical license numbers identify practitioners and are publicly searchable in state licensing registries. Risk arises only alongside patient data.",
             "remediation_advice": "Provider identifiers are public directory data; review adjacent columns for patient data.",
             "cwe": [
@@ -921,6 +1039,10 @@
             "sample_value": "AB1234567",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "UK_NHS": {
@@ -943,6 +1065,10 @@
             "sample_value": "401 023 2137",
             "references": [
                 "https://en.wikipedia.org/wiki/NHS_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "UK_PASSPORT": {
@@ -965,6 +1091,10 @@
             "sample_value": "AB1234567",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "UK_DRIVING_LICENCE": {
@@ -987,6 +1117,10 @@
             "sample_value": "MORGA657054SM9IJ",
             "references": [
                 "https://en.wikipedia.org/wiki/Driving_licence_in_the_United_Kingdom"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "UK_POSTCODE": {
@@ -1008,6 +1142,10 @@
             "sample_value": "SW1A 1AA",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "UK_VEHICLE_REGISTRATION": {
@@ -1029,6 +1167,10 @@
             "sample_value": "AB12 CDE",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CA_POSTAL_CODE": {
@@ -1050,6 +1192,10 @@
             "sample_value": "K1A 0B1",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_ID_CARD": {
@@ -1072,6 +1218,10 @@
             "sample_value": "L01X00T47",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_PASSPORT": {
@@ -1093,6 +1243,10 @@
             "sample_value": "C01X00T47",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_SOCIAL_SECURITY": {
@@ -1115,6 +1269,10 @@
             "sample_value": "15070649C103",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_TAX_ID": {
@@ -1137,6 +1295,10 @@
             "sample_value": "57549285017",
             "references": [
                 "https://en.wikipedia.org/wiki/Taxpayer_Identification_Number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_TAX_NUMBER": {
@@ -1158,6 +1320,10 @@
             "sample_value": "151/815/08156",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_VAT_ID": {
@@ -1166,7 +1332,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "GDPR Art. 4 (personal data - sole traders)",
+                "German UStG (VAT law)"
+            ],
             "description": "German VAT IDs (USt-IdNr.) identify registered businesses and are verifiable in the public VIES registry.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1176,6 +1345,10 @@
             "sample_value": "DE123456789",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_HANDELSREGISTER": {
@@ -1184,7 +1357,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "German HGB §8 (commercial register)",
+                "GDPR (where a natural person)"
+            ],
             "description": "Handelsregister numbers identify companies in Germany's public commercial register.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1194,6 +1370,10 @@
             "sample_value": "HRB 12345",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_HEALTH_INSURANCE": {
@@ -1215,6 +1395,10 @@
             "sample_value": "A123456780",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_BSNR": {
@@ -1223,7 +1407,10 @@
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "GDPR Art. 9 (health data)",
+                "German SGB V"
+            ],
             "description": "The Betriebsstaettennummer identifies a medical practice location, not a patient. Risk arises only alongside patient data.",
             "remediation_advice": "Provider identifiers are public directory data; review adjacent columns for patient data.",
             "cwe": [
@@ -1233,6 +1420,10 @@
             "sample_value": "123456789",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_LANR": {
@@ -1241,7 +1432,10 @@
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "GDPR Art. 9 (health data)",
+                "German SGB V"
+            ],
             "description": "The Lebenslange Arztnummer identifies a physician, not a patient. Risk arises only alongside patient data.",
             "remediation_advice": "Provider identifiers are public directory data; review adjacent columns for patient data.",
             "cwe": [
@@ -1251,6 +1445,10 @@
             "sample_value": "123456789",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_FUEHRERSCHEIN": {
@@ -1272,6 +1470,10 @@
             "sample_value": "AB12345678C",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_KFZ": {
@@ -1293,6 +1495,10 @@
             "sample_value": "M AB 1234",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DE_PLZ": {
@@ -1314,6 +1520,10 @@
             "sample_value": "80331",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ES_NIF": {
@@ -1336,6 +1546,10 @@
             "sample_value": "12345678Z",
             "references": [
                 "https://en.wikipedia.org/wiki/National_identity_document_(Spain)"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ES_NIE": {
@@ -1358,6 +1572,10 @@
             "sample_value": "X1234567L",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ES_PASSPORT": {
@@ -1379,6 +1597,10 @@
             "sample_value": "AAF123456",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "FI_PERSONAL_IDENTITY_CODE": {
@@ -1401,6 +1623,10 @@
             "sample_value": "131052-308T",
             "references": [
                 "https://en.wikipedia.org/wiki/National_identification_number#Finland"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PL_PESEL": {
@@ -1423,6 +1649,10 @@
             "sample_value": "44051401359",
             "references": [
                 "https://en.wikipedia.org/wiki/PESEL"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SE_PERSONNUMMER": {
@@ -1445,6 +1675,10 @@
             "sample_value": "811228-9874",
             "references": [
                 "https://en.wikipedia.org/wiki/Personal_identity_number_(Sweden)"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SE_ORGANISATIONSNUMMER": {
@@ -1453,7 +1687,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "GDPR Art. 4 (personal data - sole traders)",
+                "Swedish Bookkeeping Act"
+            ],
             "description": "Organisationsnummer identify Swedish companies in public registers.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1463,6 +1700,10 @@
             "sample_value": "556036-0793",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IT_FISCAL_CODE": {
@@ -1485,6 +1726,10 @@
             "sample_value": "RSSMRA85T10A562S",
             "references": [
                 "https://en.wikipedia.org/wiki/Italian_fiscal_code"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IT_IDENTITY_CARD": {
@@ -1507,6 +1752,10 @@
             "sample_value": "CA12345AA",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IT_PASSPORT": {
@@ -1528,6 +1777,10 @@
             "sample_value": "YA1234567",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IT_DRIVER_LICENSE": {
@@ -1549,6 +1802,10 @@
             "sample_value": "AB1234567C",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IT_VAT_CODE": {
@@ -1557,7 +1814,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "GDPR Art. 4 (personal data - sole traders)",
+                "Italian VAT DPR 633/1972"
+            ],
             "description": "Italian VAT codes identify registered businesses and are verifiable in the public VIES registry.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1567,6 +1827,10 @@
             "sample_value": "12345678903",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "KR_RRN": {
@@ -1588,6 +1852,10 @@
             "sample_value": "900101-1234567",
             "references": [
                 "https://en.wikipedia.org/wiki/Resident_registration_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "KR_FRN": {
@@ -1609,6 +1877,10 @@
             "sample_value": "900101-5678901",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "KR_DRIVER_LICENSE": {
@@ -1630,6 +1902,10 @@
             "sample_value": "11-19-174133-01",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "KR_PASSPORT": {
@@ -1651,6 +1927,10 @@
             "sample_value": "M12345678",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "KR_BRN": {
@@ -1659,7 +1939,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "Korea PIPA (where personal)",
+                "Korea Business Registration Act"
+            ],
             "description": "Korean business registration numbers identify companies in public registers.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1669,6 +1952,10 @@
             "sample_value": "123-45-67890",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SG_NRIC_FIN": {
@@ -1691,6 +1978,10 @@
             "sample_value": "S1234567D",
             "references": [
                 "https://en.wikipedia.org/wiki/National_Registration_Identity_Card"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SG_UEN": {
@@ -1699,7 +1990,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "Singapore PDPA (where personal)",
+                "ACRA registration"
+            ],
             "description": "UENs identify Singapore-registered entities in public registers.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1709,6 +2003,10 @@
             "sample_value": "201312345A",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AU_TFN": {
@@ -1731,6 +2029,10 @@
             "sample_value": "123456782",
             "references": [
                 "https://en.wikipedia.org/wiki/Tax_file_number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AU_MEDICARE": {
@@ -1752,6 +2054,10 @@
             "sample_value": "2123 45670 1",
             "references": [
                 "https://en.wikipedia.org/wiki/Medicare_card_(Australia)"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AU_ABN": {
@@ -1760,7 +2066,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "Australia Privacy Act 1988 (where sole trader)",
+                "ATO ABN registration"
+            ],
             "description": "ABNs identify registered businesses in the public Australian Business Register.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1770,6 +2079,10 @@
             "sample_value": "51824753556",
             "references": [
                 "https://en.wikipedia.org/wiki/Australian_Business_Number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AU_ACN": {
@@ -1778,7 +2091,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "Australia Corporations Act 2001",
+                "ASIC registration"
+            ],
             "description": "ACNs identify registered companies in the public Australian company register.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1788,6 +2104,10 @@
             "sample_value": "000000019",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_ID_NUMBER": {
@@ -1809,6 +2129,10 @@
             "sample_value": "8001015009087",
             "references": [
                 "https://en.wikipedia.org/wiki/South_African_identity_card"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_PASSPORT": {
@@ -1830,6 +2154,10 @@
             "sample_value": "A12345678",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_DRIVER_LICENSE": {
@@ -1851,6 +2179,10 @@
             "sample_value": "12345678AB",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_TRAFFIC_REGISTER_NUMBER": {
@@ -1872,6 +2204,10 @@
             "sample_value": "1234567890123",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_INCOME_TAX_NUMBER": {
@@ -1893,6 +2229,10 @@
             "sample_value": "1234567890",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_VAT_NUMBER": {
@@ -1901,7 +2241,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "South Africa POPIA (where personal)",
+                "SARS VAT Act 89 of 1991"
+            ],
             "description": "South African VAT numbers identify registered vendors in public registers.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1911,6 +2254,10 @@
             "sample_value": "4123456789",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_COMPANY_REGISTRATION": {
@@ -1919,7 +2266,10 @@
             "category": "Regional Compliance",
             "sensitivity": "Internal",
             "final_risk_factor": "Low",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "South Africa Companies Act 2008",
+                "CIPC registration"
+            ],
             "description": "Company registration numbers identify South African companies in the public CIPC register.",
             "remediation_advice": "Review whether the identifier is stored alongside financial records that require protection.",
             "cwe": [
@@ -1929,6 +2279,10 @@
             "sample_value": "2011/123456/07",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_LICENSE_PLATE": {
@@ -1950,6 +2304,10 @@
             "sample_value": "AB 12 CD GP",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "NG_NIN": {
@@ -1971,6 +2329,10 @@
             "sample_value": "12345678901",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "NG_VEHICLE_REGISTRATION": {
@@ -1992,6 +2354,10 @@
             "sample_value": "ABC-123DE",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PH_UMID": {
@@ -2013,6 +2379,10 @@
             "sample_value": "0111-2345678-9",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PH_TIN": {
@@ -2034,6 +2404,10 @@
             "sample_value": "123-456-789-000",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PH_PASSPORT": {
@@ -2055,6 +2429,10 @@
             "sample_value": "P1234567A",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "TH_TNIN": {
@@ -2076,6 +2454,10 @@
             "sample_value": "1101700230705",
             "references": [
                 "https://en.wikipedia.org/wiki/National_identification_number#Thailand"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "TR_NATIONAL_ID": {
@@ -2097,6 +2479,10 @@
             "sample_value": "10000000146",
             "references": [
                 "https://en.wikipedia.org/wiki/Turkish_Identification_Number"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "TR_LICENSE_PLATE": {
@@ -2118,6 +2504,10 @@
             "sample_value": "34 ABC 123",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN_VEHICLE_REGISTRATION": {
@@ -2139,6 +2529,10 @@
             "sample_value": "KA01AB1234",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CRYPTO": {
@@ -2147,7 +2541,11 @@
             "category": "Financial Data",
             "sensitivity": "Confidential",
             "final_risk_factor": "Medium",
-            "compliance_frameworks": [],
+            "compliance_frameworks": [
+                "FATF Travel Rule",
+                "US BSA/AML (FinCEN)",
+                "EU MiCA"
+            ],
             "description": "Wallet addresses expose on-chain transaction history; once linked to a person they reveal their full payment graph.",
             "remediation_advice": "Treat stored wallet addresses as financial identifiers and restrict bulk access.",
             "cwe": [
@@ -2158,6 +2556,10 @@
             "sample_value": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
             "references": [
                 "https://en.wikipedia.org/wiki/Bitcoin#Addresses_and_transactions"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "MAC_ADDRESS": {
@@ -2180,6 +2582,10 @@
             "sample_value": "00:1B:44:11:3A:B7",
             "references": [
                 "https://en.wikipedia.org/wiki/MAC_address"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "URL": {
@@ -2200,6 +2606,10 @@
             "sample_value": "https://www.wikipedia.org/wiki/Main_Page",
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "UUID": {
@@ -2218,6 +2628,9 @@
             "sample_value": "550e8400-e29b-41d4-a716-446655440000",
             "references": [
                 "https://datatracker.ietf.org/doc/html/rfc4122"
+            ],
+            "mitre_attack": [
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "GitHub Token": {
@@ -3131,6 +3544,10 @@
             "sample_value": "Member ID: ABC123456789",
             "references": [
                 "https://www.hhs.gov/hipaa/for-professionals/privacy/special-topics/de-identification/index.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_PRIOR_AUTHORIZATION_NUMBER": {
@@ -3153,6 +3570,10 @@
             "sample_value": "Prior Auth #: PA123456789",
             "references": [
                 "https://www.hhs.gov/hipaa/for-professionals/privacy/special-topics/de-identification/index.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_CLAIM_NUMBER": {
@@ -3175,6 +3596,10 @@
             "sample_value": "Claim #: 1234567890123",
             "references": [
                 "https://www.hhs.gov/hipaa/for-professionals/privacy/special-topics/de-identification/index.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_PRESCRIPTION_NUMBER": {
@@ -3197,6 +3622,10 @@
             "sample_value": "Rx #: 1234567",
             "references": [
                 "https://www.hhs.gov/hipaa/for-professionals/privacy/special-topics/de-identification/index.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_REFERRAL_NUMBER": {
@@ -3219,6 +3648,10 @@
             "sample_value": "Referral #: REF123456",
             "references": [
                 "https://www.hhs.gov/hipaa/for-professionals/privacy/special-topics/de-identification/index.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_PROVIDER_TAX_ID": {
@@ -3241,6 +3674,10 @@
             "sample_value": "Provider TIN: 12-3456789",
             "references": [
                 "https://www.hhs.gov/hipaa/for-professionals/privacy/special-topics/de-identification/index.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_MOBILE_NUMBER": {
@@ -3262,6 +3699,10 @@
             "sample_value": "+27 82 123 4567",
             "references": [
                 "https://github.com/google/libphonenumber"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ZA_TELEPHONE_NUMBER": {
@@ -3283,6 +3724,10 @@
             "sample_value": "+27 11 123 4567",
             "references": [
                 "https://github.com/google/libphonenumber"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PH_MOBILE_NUMBER": {
@@ -3304,6 +3749,10 @@
             "sample_value": "+63 917 123 4567",
             "references": [
                 "https://github.com/google/libphonenumber"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DigitalOcean Token": {
@@ -5287,6 +5736,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "FR_PASSPORT": {
@@ -5310,6 +5763,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "NL_BSN": {
@@ -5333,6 +5790,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "BE_NATIONAL_NUMBER": {
@@ -5356,6 +5817,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CH_AHV": {
@@ -5378,6 +5843,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AT_SVNR": {
@@ -5401,6 +5870,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IE_PPS": {
@@ -5424,6 +5897,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PT_NIF": {
@@ -5447,6 +5924,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "LU_NATIONAL_ID": {
@@ -5470,6 +5951,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "DK_CPR": {
@@ -5493,6 +5978,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "NO_FODSELSNUMMER": {
@@ -5516,6 +6005,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IS_KENNITALA": {
@@ -5539,6 +6032,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CZ_RODNE_CISLO": {
@@ -5562,6 +6059,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SK_RODNE_CISLO": {
@@ -5585,6 +6086,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "HU_TAJ": {
@@ -5608,6 +6113,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "RO_CNP": {
@@ -5631,6 +6140,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "GR_AMKA": {
@@ -5654,6 +6167,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "BG_EGN": {
@@ -5677,6 +6194,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "HR_OIB": {
@@ -5700,6 +6221,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "RS_JMBG": {
@@ -5722,6 +6247,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SI_EMSO": {
@@ -5745,6 +6274,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "LT_ASMENS_KODAS": {
@@ -5768,6 +6301,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "EE_ISIKUKOOD": {
@@ -5791,6 +6328,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "LV_PERSONAS_KODS": {
@@ -5814,6 +6355,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "RU_INN": {
@@ -5836,6 +6381,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "RU_SNILS": {
@@ -5858,6 +6407,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "UA_RNTRC": {
@@ -5880,6 +6433,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ES_NUSS": {
@@ -5903,6 +6460,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "GB_UTR": {
@@ -5926,6 +6487,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "GB_SORT_CODE": {
@@ -5949,6 +6514,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "BR_CPF": {
@@ -5971,6 +6540,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "BR_CNPJ": {
@@ -5993,6 +6566,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "MX_CURP": {
@@ -6015,6 +6592,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "MX_RFC": {
@@ -6037,6 +6618,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AR_CUIT": {
@@ -6059,6 +6644,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AR_DNI": {
@@ -6081,6 +6670,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CL_RUT": {
@@ -6104,6 +6697,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CA_OHIP": {
@@ -6127,6 +6724,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_EIN": {
@@ -6150,6 +6751,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "US_ALIEN_REGISTRATION": {
@@ -6173,6 +6778,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "JP_MY_NUMBER": {
@@ -6196,6 +6805,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "JP_PASSPORT": {
@@ -6219,6 +6832,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "CN_RESIDENT_ID": {
@@ -6241,6 +6858,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "HK_HKID": {
@@ -6263,6 +6884,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "TW_NATIONAL_ID": {
@@ -6285,6 +6910,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ID_NIK": {
@@ -6307,6 +6936,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "MY_MYKAD": {
@@ -6329,6 +6962,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "VN_CCCD": {
@@ -6351,6 +6988,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PK_CNIC": {
@@ -6374,6 +7015,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "LK_NIC": {
@@ -6396,6 +7041,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "NZ_IRD": {
@@ -6419,6 +7068,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "NZ_NHI": {
@@ -6442,6 +7095,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AU_IHI": {
@@ -6465,6 +7122,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AU_BSB": {
@@ -6488,6 +7149,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN_IFSC": {
@@ -6511,6 +7176,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IN_UPI_ID": {
@@ -6534,6 +7203,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "AE_EMIRATES_ID": {
@@ -6556,6 +7229,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "SA_NATIONAL_ID": {
@@ -6578,6 +7255,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IL_TEUDAT_ZEHUT": {
@@ -6600,6 +7281,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "EG_NATIONAL_ID": {
@@ -6622,6 +7307,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "GH_GHANA_CARD": {
@@ -6644,6 +7333,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "IMEI": {
@@ -6667,6 +7360,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ICCID": {
@@ -6690,6 +7387,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "VIN": {
@@ -6713,6 +7414,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "PASSPORT_MRZ": {
@@ -6736,6 +7441,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "GEO_COORDINATES": {
@@ -6759,6 +7468,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "ICD10_CODE": {
@@ -6782,6 +7495,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "NDC_CODE": {
@@ -6805,6 +7522,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         },
         "MEDICAL_RECORD_NUMBER": {
@@ -6828,6 +7549,10 @@
             "references": [
                 "https://cwe.mitre.org/data/definitions/359.html",
                 "https://cwe.mitre.org/data/definitions/312.html"
+            ],
+            "mitre_attack": [
+                "T1530 (Data from Cloud Storage)",
+                "T1213 (Data from Information Repositories)"
             ]
         }
     }

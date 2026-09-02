@@ -99,6 +99,10 @@ class Rule:
     validator: Optional[Validator] = None
     invalidator: Optional[Validator] = None
     field_hint: Optional[str] = None
+    # A single check digit that ~1 in 10-11 random shaped values pass (VIN's ISO 3779 digit on a
+    # 17-char alnum string). Validation alone is then weak evidence: the engine keeps such a match
+    # at `possible` until a field name, keyword or column density corroborates it (like a bare number).
+    weak_validation: bool = False
     enabled: bool = True
     context_boost: float = 0.35
     min_score_with_context: float = 0.4

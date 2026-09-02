@@ -66,12 +66,16 @@ def _validate_uk_vehicle_registration(text: str) -> Optional[bool]:
     (March) or 51-79 (September). Prefix / suffix formats return None.
     """
     sanitized_value = sanitize(text, _DASH_SPACE)
-    # Current format is exactly 7 chars after sanitization
+    # Current format is exactly 7 chars after sanitization. The age identifier is a plausibility
+    # range, NOT a checksum (UK plates have none): ~half of 2-2-3 tokens fall in it, so a pass is
+    # never authoritative. Return None (keep the pattern score) on a plausible age and False on an
+    # implausible one - never True, which would reach very_likely and bypass the context requirement
+    # (regression: us06web / DC02-nsg / VM12-new reported very_likely UK vehicle registrations).
     if len(sanitized_value) == 7 and sanitized_value[:2].isalpha():
         age_id_str = sanitized_value[2:4]
         if age_id_str.isdigit():
             age_id = int(age_id_str)
-            return (2 <= age_id <= 29) or (51 <= age_id <= 79)
+            return None if (2 <= age_id <= 29) or (51 <= age_id <= 79) else False
     return None
 
 
