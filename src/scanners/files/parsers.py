@@ -8,7 +8,7 @@ one per member (recursively, with nesting and decompression-size guards).
 Columnar formats (CSV/TSV, Excel, Parquet) yield one Record per row so the
 pipeline can use the column name as context and judge whole columns;
 record formats (JSON, JSON Lines, XML) yield one Record per document with
-dotted field paths; documents (PDF, Word, images via OCR) and everything else
+dotted field paths; documents (PDF, Word, PowerPoint, images via OCR) and everything else
 yield TextBlobs. A connector for any object store only has to download the
 object and call iter_units().
 
@@ -21,6 +21,7 @@ import bz2
 import gzip
 import json
 import os
+import re
 import shutil
 import tarfile
 import tempfile
@@ -72,8 +73,12 @@ logger = get_logger(__name__)
 
 ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".tgz", ".bz2"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff"}
+# PowerPoint OOXML: a zip of slide XML parts, read directly (python-pptx is not a dependency)
+PRESENTATION_EXTENSIONS = {".pptx", ".pptm", ".ppsx", ".potx"}
 CHUNK_ROWS = 5000
 TEXT_BLOCK_LINES = 1000
+BINARY_SNIFF_BYTES = 8192
+_TEXT_CONTROL_BYTES = frozenset(b"\t\n\r\f\v\b\x1b")
 
 ItemStream = Iterator[Any]
 Unit = Tuple[str, ItemStream]
@@ -101,6 +106,8 @@ def iter_units(file_path: str, resource_id: str, config: Optional[Dict[str, Any]
         yield resource_id, iter_pdf(file_path)
     elif ext in (".doc", ".docx"):
         yield resource_id, iter_docx(file_path)
+    elif ext in PRESENTATION_EXTENSIONS:
+        yield resource_id, iter_pptx(file_path)
     elif ext in IMAGE_EXTENSIONS:
         yield resource_id, iter_image_ocr(file_path)
     else:
@@ -247,6 +254,62 @@ def iter_docx(file_path: str) -> Iterator[TextBlob]:
             yield TextBlob(paragraph.text, location=f"Paragraph {idx + 1}")
 
 
+def _slide_number(part_name: str) -> int:
+    match = re.search(r"(\d+)", os.path.basename(part_name))
+    return int(match.group(1)) if match else 0
+
+
+def _ooxml_paragraphs(part_bytes: bytes) -> List[str]:
+    """The text of every DrawingML paragraph (<a:p> of <a:t> runs) in a slide part."""
+    # Entity resolution disabled against XXE / entity-expansion input, as in iter_xml
+    parser = etree.XMLParser(resolve_entities=False, recover=True)
+    root = etree.fromstring(part_bytes, parser=parser)
+    if root is None:
+        return []
+    lines = []
+    for para in root.iter():
+        if etree.QName(para).localname != "p":
+            continue
+        runs = [run.text for run in para.iter() if etree.QName(run).localname == "t" and run.text]
+        line = "".join(runs).strip()
+        if line:
+            lines.append(line)
+    return lines
+
+
+def iter_pptx(file_path: str) -> Iterator[TextBlob]:
+    """
+    One TextBlob per slide (and per notes page) of a PowerPoint file, read
+    straight out of the OOXML package. Without this a .pptx would fall to
+    iter_text and be scanned as decoded binary, which yields no real text and
+    costs minutes per file in the detection layers.
+    """
+    if not etree:
+        logger.warning("lxml is not installed. Skipping PowerPoint scan.")
+        return
+    try:
+        archive = zipfile.ZipFile(file_path)
+    except Exception as e:
+        logger.warning(f"Not a readable PowerPoint package {file_path}: {str(e)}")
+        return
+    with archive:
+        parts = [
+            (name, "Slide") for name in archive.namelist()
+            if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)
+        ] + [
+            (name, "Slide Notes") for name in archive.namelist()
+            if re.fullmatch(r"ppt/notesSlides/notesSlide\d+\.xml", name)
+        ]
+        for name, label in sorted(parts, key=lambda item: (item[1], _slide_number(item[0]))):
+            try:
+                lines = _ooxml_paragraphs(archive.read(name))
+            except Exception as e:
+                logger.warning(f"Failed to parse {name} of {file_path}: {str(e)}")
+                continue
+            if lines:
+                yield TextBlob("\n".join(lines), location=f"{label} {_slide_number(name)}")
+
+
 def iter_image_ocr(file_path: str) -> Iterator[TextBlob]:
     if not pytesseract or not Image:
         logger.warning("pytesseract/Pillow is not installed. Skipping Image OCR scan.")
@@ -267,8 +330,42 @@ def _text_locator(block_text: str, line_offset: int) -> Callable[[int, int], str
     return locate
 
 
+def _looks_binary(file_path: str) -> bool:
+    """
+    git's heuristic: a NUL byte in the first block, or a high share of bytes
+    that are not text, means the file is not text. Decoding such a file and
+    running the detection layers over the resulting mojibake finds nothing and
+    is very slow (the NER model alone spends tens of seconds per block), so
+    unknown binary formats are skipped rather than scanned as text.
+    """
+    try:
+        with open(file_path, "rb") as f:
+            head = f.read(BINARY_SNIFF_BYTES)
+    except OSError:
+        return False
+    if not head:
+        return False
+    if b"\x00" in head:
+        return True
+    # High bytes only count against the file when the block is not valid UTF-8,
+    # so a UTF-8 or legacy-encoded text file with accents stays text.
+    try:
+        head.decode("utf-8")
+        high_is_text = True
+    except UnicodeDecodeError as e:
+        high_is_text = e.start >= len(head) - 4  # a multibyte character cut by the sniff boundary
+    non_text = sum(
+        1 for byte in head
+        if (byte < 0x20 and byte not in _TEXT_CONTROL_BYTES) or (byte >= 0x80 and not high_is_text)
+    )
+    return non_text / len(head) > 0.3
+
+
 def iter_text(file_path: str) -> Iterator[TextBlob]:
     """Plain text in blocks of TEXT_BLOCK_LINES lines with line/column locations."""
+    if _looks_binary(file_path):
+        logger.info(f"Skipping {file_path}: binary content, no text parser for this format")
+        return
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         block_lines: List[str] = []
         line_offset = 1

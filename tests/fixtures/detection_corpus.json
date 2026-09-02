@@ -1517,7 +1517,7 @@
       "id": "postgres-0090",
       "source": "postgres",
       "field": "misc",
-      "text": "password: 1B5qTxrw$*2EAEN§81-!Ra7Q6q&0eQ",
+      "text": "password: 1B5qTxrw$*2EAEN\u00a781-!Ra7Q6q&0eQ",
       "kind": "tp",
       "old_detector": "Password Pattern",
       "expect_any": [
@@ -2700,7 +2700,7 @@
       "id": "postgres-0163",
       "source": "postgres",
       "field": "description",
-      "text": "Grafana is an open source data visualization platform for metrics, logs, and traces. Versions prior to 9.1.8 and 8.5.14 allow one user to block another user's login attempt by registering someone else'e email address as a username. A Grafana user’s username and email address are unique fields, that means no other user can have the same username or email address as another user. A user can have an email address as a username. However, the login system allows users to log in with either username or email address. Since Grafana allows a user to log in with either their username or email address, this creates an usual behavior where `user_1` can register with one email address and `user_2` can register their username as `user_1`’s email address. This prevents `user_1` logging into the application since `user_1`'s password won’t match with `user_2`'s email address. Versions 9.1.8 and 8.5.14 c",
+      "text": "Grafana is an open source data visualization platform for metrics, logs, and traces. Versions prior to 9.1.8 and 8.5.14 allow one user to block another user's login attempt by registering someone else'e email address as a username. A Grafana user\u2019s username and email address are unique fields, that means no other user can have the same username or email address as another user. A user can have an email address as a username. However, the login system allows users to log in with either username or email address. Since Grafana allows a user to log in with either their username or email address, this creates an usual behavior where `user_1` can register with one email address and `user_2` can register their username as `user_1`\u2019s email address. This prevents `user_1` logging into the application since `user_1`'s password won\u2019t match with `user_2`'s email address. Versions 9.1.8 and 8.5.14 c",
       "kind": "fp",
       "old_detector": "Address",
       "forbid_detectors": [
@@ -2717,7 +2717,7 @@
       "id": "postgres-0164",
       "source": "postgres",
       "field": "misc",
-      "text": "{'raw_rule': {'id': 'CVE-2022-39229-Jfrog-XRAY-257608', 'help': {'text': \"Grafana is an open source data visualization platform for metrics, logs, and traces. Versions prior to 9.1.8 and 8.5.14 allow one user to block another user's login attempt by registering someone else'e email address as a username. A Grafana user’s username and email address are unique fields, that means no other user can have the same username or email address as another user. A user can have an email address as a username. However, the login system allows users to log in with either username or email address. Since Grafana allows a user to log in with either their username or email address, this creates an usual behavior where `user_1` can register with one email address and `user_2` can register their username as `user_1`’s email address. This prevents `user_1` logging into the application since `user_1`'s passw",
+      "text": "{'raw_rule': {'id': 'CVE-2022-39229-Jfrog-XRAY-257608', 'help': {'text': \"Grafana is an open source data visualization platform for metrics, logs, and traces. Versions prior to 9.1.8 and 8.5.14 allow one user to block another user's login attempt by registering someone else'e email address as a username. A Grafana user\u2019s username and email address are unique fields, that means no other user can have the same username or email address as another user. A user can have an email address as a username. However, the login system allows users to log in with either username or email address. Since Grafana allows a user to log in with either their username or email address, this creates an usual behavior where `user_1` can register with one email address and `user_2` can register their username as `user_1`\u2019s email address. This prevents `user_1` logging into the application since `user_1`'s passw",
       "kind": "fp",
       "old_detector": "Address",
       "forbid_detectors": [
@@ -4086,7 +4086,7 @@
       "id": "postgres-0247",
       "source": "postgres",
       "field": "misc",
-      "text": "{'type': 'master', 'audit': 'find /etc/kubernetes/pki/ | xargs stat -c %U:%G', 'reason': 'failed to run: \"find /etc/kubernetes/pki/ | xargs stat -c %U:%G\", output: \"find: ‘/etc/kubernetes/pki/’: No such file or directory\\\\nBusyBox v1.37.0 (2025-12-16 14:19:28 UTC) multi-call binary.\\\\n\\\\nUsage: stat [-ltf] [-c FMT] FILE...\\\\n\\\\nDisplay file (default) or filesystem status\\\\n\\\\n\\\\t-c FMT\\\\tUse the specified format\\\\n\\\\t-f\\\\tDisplay filesystem status\\\\n\\\\t-L\\\\tFollow links\\\\n\\\\t-t\\\\tTerse display\\\\n\\\\nFMT sequences for files:\\\\n %a\\\\tAccess rights in octal\\\\n %A\\\\tAccess rights in human readable form\\\\n %b\\\\tNumber of blocks allocated (see %B)\\\\n %B\\\\tSize in bytes of each block reported by %b\\\\n %d\\\\tDevice number in decimal\\\\n %D\\\\tDevice number in hex\\\\n %f\\\\tRaw mode in hex\\\\n %F\\\\tFile type\\\\n %g\\\\tGroup ID\\\\n %G\\\\tGroup name\\\\n %h\\\\tNumber of hard links\\\\n %i\\\\tInode number\\\\n %n\\\\tFi",
+      "text": "{'type': 'master', 'audit': 'find /etc/kubernetes/pki/ | xargs stat -c %U:%G', 'reason': 'failed to run: \"find /etc/kubernetes/pki/ | xargs stat -c %U:%G\", output: \"find: \u2018/etc/kubernetes/pki/\u2019: No such file or directory\\\\nBusyBox v1.37.0 (2025-12-16 14:19:28 UTC) multi-call binary.\\\\n\\\\nUsage: stat [-ltf] [-c FMT] FILE...\\\\n\\\\nDisplay file (default) or filesystem status\\\\n\\\\n\\\\t-c FMT\\\\tUse the specified format\\\\n\\\\t-f\\\\tDisplay filesystem status\\\\n\\\\t-L\\\\tFollow links\\\\n\\\\t-t\\\\tTerse display\\\\n\\\\nFMT sequences for files:\\\\n %a\\\\tAccess rights in octal\\\\n %A\\\\tAccess rights in human readable form\\\\n %b\\\\tNumber of blocks allocated (see %B)\\\\n %B\\\\tSize in bytes of each block reported by %b\\\\n %d\\\\tDevice number in decimal\\\\n %D\\\\tDevice number in hex\\\\n %f\\\\tRaw mode in hex\\\\n %F\\\\tFile type\\\\n %g\\\\tGroup ID\\\\n %G\\\\tGroup name\\\\n %h\\\\tNumber of hard links\\\\n %i\\\\tInode number\\\\n %n\\\\tFi",
       "kind": "fp",
       "old_detector": "Address",
       "forbid_detectors": [
@@ -4103,7 +4103,7 @@
       "id": "postgres-0248",
       "source": "postgres",
       "field": "misc",
-      "text": "{'type': 'master', 'audit': \"find /etc/kubernetes/pki/ -name '*.crt' | xargs stat -c permissions=%a\", 'reason': 'failed to run: \"find /etc/kubernetes/pki/ -name \\'*.crt\\' | xargs stat -c permissions=%a\", output: \"find: ‘/etc/kubernetes/pki/’: No such file or directory\\\\nBusyBox v1.37.0 (2025-12-16 14:19:28 UTC) multi-call binary.\\\\n\\\\nUsage: stat [-ltf] [-c FMT] FILE...\\\\n\\\\nDisplay file (default) or filesystem status\\\\n\\\\n\\\\t-c FMT\\\\tUse the specified format\\\\n\\\\t-f\\\\tDisplay filesystem status\\\\n\\\\t-L\\\\tFollow links\\\\n\\\\t-t\\\\tTerse display\\\\n\\\\nFMT sequences for files:\\\\n %a\\\\tAccess rights in octal\\\\n %A\\\\tAccess rights in human readable form\\\\n %b\\\\tNumber of blocks allocated (see %B)\\\\n %B\\\\tSize in bytes of each block reported by %b\\\\n %d\\\\tDevice number in decimal\\\\n %D\\\\tDevice number in hex\\\\n %f\\\\tRaw mode in hex\\\\n %F\\\\tFile type\\\\n %g\\\\tGroup ID\\\\n %G\\\\tGroup name\\\\n %h\\\\tNumb",
+      "text": "{'type': 'master', 'audit': \"find /etc/kubernetes/pki/ -name '*.crt' | xargs stat -c permissions=%a\", 'reason': 'failed to run: \"find /etc/kubernetes/pki/ -name \\'*.crt\\' | xargs stat -c permissions=%a\", output: \"find: \u2018/etc/kubernetes/pki/\u2019: No such file or directory\\\\nBusyBox v1.37.0 (2025-12-16 14:19:28 UTC) multi-call binary.\\\\n\\\\nUsage: stat [-ltf] [-c FMT] FILE...\\\\n\\\\nDisplay file (default) or filesystem status\\\\n\\\\n\\\\t-c FMT\\\\tUse the specified format\\\\n\\\\t-f\\\\tDisplay filesystem status\\\\n\\\\t-L\\\\tFollow links\\\\n\\\\t-t\\\\tTerse display\\\\n\\\\nFMT sequences for files:\\\\n %a\\\\tAccess rights in octal\\\\n %A\\\\tAccess rights in human readable form\\\\n %b\\\\tNumber of blocks allocated (see %B)\\\\n %B\\\\tSize in bytes of each block reported by %b\\\\n %d\\\\tDevice number in decimal\\\\n %D\\\\tDevice number in hex\\\\n %f\\\\tRaw mode in hex\\\\n %F\\\\tFile type\\\\n %g\\\\tGroup ID\\\\n %G\\\\tGroup name\\\\n %h\\\\tNumb",
       "kind": "fp",
       "old_detector": "Address",
       "forbid_detectors": [
@@ -4120,7 +4120,7 @@
       "id": "postgres-0249",
       "source": "postgres",
       "field": "misc",
-      "text": "{'type': 'master', 'audit': \"find /etc/kubernetes/pki/ -name '*.key' | xargs stat -c permissions=%a\", 'reason': 'failed to run: \"find /etc/kubernetes/pki/ -name \\'*.key\\' | xargs stat -c permissions=%a\", output: \"find: ‘/etc/kubernetes/pki/’: No such file or directory\\\\nBusyBox v1.37.0 (2025-12-16 14:19:28 UTC) multi-call binary.\\\\n\\\\nUsage: stat [-ltf] [-c FMT] FILE...\\\\n\\\\nDisplay file (default) or filesystem status\\\\n\\\\n\\\\t-c FMT\\\\tUse the specified format\\\\n\\\\t-f\\\\tDisplay filesystem status\\\\n\\\\t-L\\\\tFollow links\\\\n\\\\t-t\\\\tTerse display\\\\n\\\\nFMT sequences for files:\\\\n %a\\\\tAccess rights in octal\\\\n %A\\\\tAccess rights in human readable form\\\\n %b\\\\tNumber of blocks allocated (see %B)\\\\n %B\\\\tSize in bytes of each block reported by %b\\\\n %d\\\\tDevice number in decimal\\\\n %D\\\\tDevice number in hex\\\\n %f\\\\tRaw mode in hex\\\\n %F\\\\tFile type\\\\n %g\\\\tGroup ID\\\\n %G\\\\tGroup name\\\\n %h\\\\tNumb",
+      "text": "{'type': 'master', 'audit': \"find /etc/kubernetes/pki/ -name '*.key' | xargs stat -c permissions=%a\", 'reason': 'failed to run: \"find /etc/kubernetes/pki/ -name \\'*.key\\' | xargs stat -c permissions=%a\", output: \"find: \u2018/etc/kubernetes/pki/\u2019: No such file or directory\\\\nBusyBox v1.37.0 (2025-12-16 14:19:28 UTC) multi-call binary.\\\\n\\\\nUsage: stat [-ltf] [-c FMT] FILE...\\\\n\\\\nDisplay file (default) or filesystem status\\\\n\\\\n\\\\t-c FMT\\\\tUse the specified format\\\\n\\\\t-f\\\\tDisplay filesystem status\\\\n\\\\t-L\\\\tFollow links\\\\n\\\\t-t\\\\tTerse display\\\\n\\\\nFMT sequences for files:\\\\n %a\\\\tAccess rights in octal\\\\n %A\\\\tAccess rights in human readable form\\\\n %b\\\\tNumber of blocks allocated (see %B)\\\\n %B\\\\tSize in bytes of each block reported by %b\\\\n %d\\\\tDevice number in decimal\\\\n %D\\\\tDevice number in hex\\\\n %f\\\\tRaw mode in hex\\\\n %F\\\\tFile type\\\\n %g\\\\tGroup ID\\\\n %G\\\\tGroup name\\\\n %h\\\\tNumb",
       "kind": "fp",
       "old_detector": "Address",
       "forbid_detectors": [
@@ -8852,6 +8852,210 @@
         "Credentials and Secrets",
         "Entropy-Based Secret Detection"
       ]
+    },
+    {
+      "id": "gdrive-code-0001",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "const apiKey = apiKeyInput.value.trim();",
+      "kind": "fp",
+      "old_detector": "API Key",
+      "forbid_detectors": [
+        "API Key",
+        "Bearer Token",
+        "OAuth Token",
+        "Password Pattern",
+        "High Entropy Secret"
+      ],
+      "forbid_categories": [
+        "Credentials and Secrets",
+        "Entropy-Based Secret Detection"
+      ]
+    },
+    {
+      "id": "gdrive-code-0002",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "apiKey: apiKeyInput.value",
+      "kind": "fp",
+      "old_detector": "API Key",
+      "forbid_detectors": [
+        "API Key",
+        "Bearer Token",
+        "OAuth Token",
+        "Password Pattern",
+        "High Entropy Secret"
+      ],
+      "forbid_categories": [
+        "Credentials and Secrets",
+        "Entropy-Based Secret Detection"
+      ]
+    },
+    {
+      "id": "gdrive-code-0003",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "const token = this.state.token",
+      "kind": "fp",
+      "old_detector": "Bearer Token",
+      "forbid_detectors": [
+        "API Key",
+        "Bearer Token",
+        "OAuth Token",
+        "Password Pattern",
+        "High Entropy Secret"
+      ],
+      "forbid_categories": [
+        "Credentials and Secrets",
+        "Entropy-Based Secret Detection"
+      ]
+    },
+    {
+      "id": "gdrive-code-0004",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "let s = config.apiKey.secret",
+      "kind": "fp",
+      "old_detector": "API Key",
+      "forbid_detectors": [
+        "API Key",
+        "Bearer Token",
+        "OAuth Token",
+        "Password Pattern",
+        "High Entropy Secret"
+      ],
+      "forbid_categories": [
+        "Credentials and Secrets",
+        "Entropy-Based Secret Detection"
+      ]
+    },
+    {
+      "id": "gdrive-code-0005",
+      "source": "gdrive-2026-09-02",
+      "field": null,
+      "text": "api_key = process.env.API_KEY",
+      "kind": "fp",
+      "old_detector": "API Key",
+      "forbid_detectors": [
+        "API Key",
+        "Bearer Token",
+        "OAuth Token",
+        "Password Pattern",
+        "High Entropy Secret"
+      ],
+      "forbid_categories": [
+        "Credentials and Secrets",
+        "Entropy-Based Secret Detection"
+      ]
+    }
+  ],
+  "units_description": "Unit-level cases: a labelled column/document run through UnitClassifier (not one value). The engine-level 'samples' cannot express column-density / count logic, which is where the highest-value real false positives live (phone columns tripping weak-checksum national IDs).",
+  "units": [
+    {
+      "id": "unit-gdrive-phone-status-nhs-utr",
+      "source": "gdrive-2026-09-02",
+      "unit_name": "Responses",
+      "field": "Status",
+      "kind": "fp",
+      "forbid_detectors": [
+        "UK_NHS",
+        "GB_UTR"
+      ],
+      "rows_int_range": [
+        9000000000,
+        9000000120
+      ],
+      "note": "120 Indian-mobile 10-digit numbers; ~10 pass NHS/UTR mod-11 by chance. Real FP from r@accuknox.com."
+    },
+    {
+      "id": "unit-gdrive-emailids-unnamed-nhs",
+      "source": "gdrive-2026-09-02",
+      "unit_name": "EMAIL IDs",
+      "field": "Unnamed: 6",
+      "kind": "fp",
+      "forbid_detectors": [
+        "UK_NHS",
+        "GB_UTR"
+      ],
+      "rows_int_range": [
+        6000000000,
+        6000000120
+      ],
+      "note": "Phone column with a meaningless header; must not classify as a health/tax ID."
+    },
+    {
+      "id": "unit-ssn-headerless-column",
+      "source": "synthetic",
+      "unit_name": "records",
+      "field": "ref",
+      "kind": "tp",
+      "expect_detectors": [
+        "US SSN"
+      ],
+      "rows": [
+        "200-10-1000",
+        "201-11-1001",
+        "202-12-1002",
+        "203-13-1003",
+        "204-14-1004",
+        "205-15-1005",
+        "206-16-1006",
+        "207-17-1007",
+        "208-18-1008",
+        "209-19-1009",
+        "210-20-1010",
+        "211-21-1011",
+        "212-22-1012",
+        "213-23-1013",
+        "214-24-1014",
+        "215-25-1015",
+        "216-26-1016",
+        "217-27-1017",
+        "218-28-1018",
+        "219-29-1019",
+        "220-30-1020",
+        "221-31-1021",
+        "222-32-1022",
+        "223-33-1023",
+        "224-34-1024",
+        "225-35-1025",
+        "226-36-1026",
+        "227-37-1027",
+        "228-38-1028",
+        "229-39-1029",
+        "230-40-1030",
+        "231-41-1031",
+        "232-42-1032",
+        "233-43-1033",
+        "234-44-1034",
+        "235-45-1035",
+        "236-46-1036",
+        "237-47-1037",
+        "238-48-1038",
+        "239-49-1039"
+      ],
+      "note": "40 distinct SSN-shaped values under a meaningless header -> column density should classify."
+    },
+    {
+      "id": "unit-utr-named-column",
+      "source": "synthetic",
+      "unit_name": "Tax",
+      "field": "utr",
+      "kind": "tp",
+      "expect_detectors": [
+        "GB_UTR"
+      ],
+      "rows": [
+        "1000000005",
+        "1000000006",
+        "1000000019",
+        "1000000022",
+        "1000000023",
+        "1000000036",
+        "1000000037",
+        "1000000040"
+      ],
+      "note": "A column of checksum-valid UTRs under a 'utr' header -> must classify (validated density)."
     }
   ]
 }

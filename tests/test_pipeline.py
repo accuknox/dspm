@@ -407,6 +407,48 @@ def test_file_parsers_yield_records_and_blobs():
     assert seen == {"res://bundle.zip#people.csv": 2, "res://bundle.zip#docs/notes.txt": 1}
 
 
+_PPTX_NS = (
+    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+    'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"'
+)
+
+
+def _pptx_part(lines):
+    body = "".join(f"<a:p><a:r><a:t>{line}</a:t></a:r></a:p>" for line in lines)
+    return f'<?xml version="1.0"?><p:sld {_PPTX_NS}><p:cSld><p:spTree><p:sp><p:txBody>{body}</p:txBody></p:sp></p:spTree></p:cSld></p:sld>'
+
+
+def test_pptx_yields_one_blob_per_slide_in_order():
+    root = tempfile.mkdtemp()
+    path = os.path.join(root, "deck.pptx")
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("ppt/slides/slide10.xml", _pptx_part(["Tenth slide"]))
+        z.writestr("ppt/slides/slide2.xml", _pptx_part(["Revenue", "alice@acme-corp.io"]))
+        z.writestr("ppt/slides/slide1.xml", _pptx_part(["Partnership Program"]))
+        z.writestr("ppt/notesSlides/notesSlide1.xml", _pptx_part(["Speaker note"]))
+        z.writestr("ppt/media/image1.png", os.urandom(4096))  # media is never decoded as text
+    (_, stream), = iter_units(path, "res://deck.pptx")
+    blobs = list(stream)
+    assert [b.location for b in blobs] == ["Slide 1", "Slide 2", "Slide 10", "Slide Notes 1"]
+    assert blobs[1].text == "Revenue\nalice@acme-corp.io"
+
+
+def test_binary_file_without_a_parser_is_skipped_not_scanned_as_text():
+    """An unknown binary format must not reach the detection layers as mojibake."""
+    root = tempfile.mkdtemp()
+    path = os.path.join(root, "payload.unknown")
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n" + bytes(range(256)) * 64)
+    (_, stream), = iter_units(path, "res://payload.unknown")
+    assert list(stream) == []
+
+    utf8_path = os.path.join(root, "notes.md")
+    with open(utf8_path, "w", encoding="utf-8") as f:
+        f.write("Non-ASCII prose — wörld, ünïcode — is still text.\n")
+    (_, stream), = iter_units(utf8_path, "res://notes.md")
+    assert len(list(stream)) == 1
+
+
 # --------------------------------------------------------------------------- connector contract
 
 class _ListScanner(BaseScanner):
