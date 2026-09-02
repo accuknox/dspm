@@ -125,6 +125,22 @@ def test_scan_entropy():
     assert findings[0]["detector"] == "High Entropy Secret"
 
 
+def test_large_base64_blob_scans_fast():
+    # Regression: a big base64 blob (a .drawio diagram is base64 XML) made EMAIL_REGEX backtrack
+    # O(n^2) - a 48 KB blob took ~4s, a 15 MB file hours. The bounded local part keeps it linear.
+    import base64
+    import os
+    import time
+
+    blob = base64.b64encode(os.urandom(200 * 1024)).decode()  # 200 KB, no '@'
+    start = time.time()
+    findings = DetectionEngine().scan_text(blob)
+    assert time.time() - start < 2.0, "email regex is backtracking on a long base64 run again"
+    assert not any(f["detector"] == "Email" for f in findings)
+    # real emails still detected
+    assert [f["detector"] for f in DetectionEngine().scan_text("reach me at john.doe@accuknox.com")] == ["Email"]
+
+
 def test_credential_assignment_ignores_code_expressions():
     # A dotted member-expression on the RHS is source code, not a secret value
     # (regression: ak-prompt-fw browser plugin reported apiKeyInput.value.trim as API Key).

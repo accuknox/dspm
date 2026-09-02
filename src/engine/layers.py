@@ -143,7 +143,10 @@ CONTEXT_WORDS = {
 # ---------------------------------------------------------------------------
 
 EMAIL_REGEX = re.compile(
-    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}(?![A-Za-z0-9])",
+    # Local part bounded to the RFC 5321 maximum of 64 chars: unbounded `+` over a class that
+    # includes base64 symbols (/ + = .) backtracks O(n^2) on a long base64 run with no '@'
+    # (a 48 KB drawio blob took ~4s), which can hang a scan on a large encoded file.
+    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]{1,64}@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}(?![A-Za-z0-9])",
 )
 DEMO_DOMAINS = frozenset({
     "example.com", "example.org", "example.net", "example.edu", "example.co.uk", "test.com", "domain.com",

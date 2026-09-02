@@ -78,6 +78,11 @@ PRESENTATION_EXTENSIONS = {".pptx", ".pptm", ".ppsx", ".potx"}
 CHUNK_ROWS = 5000
 TEXT_BLOCK_LINES = 1000
 BINARY_SNIFF_BYTES = 8192
+# Cap the bytes read from an unknown/plain-text file. A large encoded file that sniffs as text
+# (a multi-MB .drawio is base64 XML) otherwise runs the full engine over megabytes of one line;
+# a single line is also capped so one giant line cannot become one huge scan value.
+MAX_TEXT_BYTES = 8 * 1024 * 1024
+MAX_TEXT_LINE_CHARS = 200_000
 _TEXT_CONTROL_BYTES = frozenset(b"\t\n\r\f\v\b\x1b")
 
 ItemStream = Iterator[Any]
@@ -369,8 +374,17 @@ def iter_text(file_path: str) -> Iterator[TextBlob]:
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         block_lines: List[str] = []
         line_offset = 1
+        read = 0
         for line in f:
+            if len(line) > MAX_TEXT_LINE_CHARS:
+                line = line[:MAX_TEXT_LINE_CHARS]  # one enormous line (minified/encoded) -> cap the scan value
+            read += len(line)
             block_lines.append(line)
+            if read >= MAX_TEXT_BYTES:
+                logger.info(f"{file_path}: scanning first {MAX_TEXT_BYTES // (1024 * 1024)} MB of text, rest skipped")
+                block_text = "".join(block_lines)
+                yield TextBlob(block_text, location=f"Line {line_offset}", locate=_text_locator(block_text, line_offset))
+                return
             if len(block_lines) >= TEXT_BLOCK_LINES:
                 block_text = "".join(block_lines)
                 yield TextBlob(block_text, location=f"Line {line_offset}", locate=_text_locator(block_text, line_offset))
