@@ -7,7 +7,7 @@ container for two kinds of host:
 
 | Folder | Use when | What it is |
 |---|---|---|
-| [`vm/`](vm/README.md) | **Default.** Any cloud, no cluster required | One VM per region, one scanner instance (container) per credential set, systemd timers, findings uploaded per instance |
+| [`vm/`](vm/README.md) | **Default.** Any cloud, no cluster required | One VM per region, one scanner instance (container) per credential set, systemd timers, findings uploaded per instance.
 | [`kubernetes/`](kubernetes/cronjob.yaml) | The customer already runs OpenShift / Kubernetes in that region | CronJob + Secret template that works under the restricted SCC |
 
 Placement rule for both: **one scanner per region**, plus one per network the scanner cannot otherwise reach. Another

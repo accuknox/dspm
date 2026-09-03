@@ -28,14 +28,19 @@ fi
 
 # ---- configuration -------------------------------------------------------------------------------
 install -d -m 0750 "$CONF_DIR" "$CONF_DIR/instances" "$CONF_DIR/keys"
-install -d -m 0750 -o 1001 -g 0 "$OUT_DIR"
+# The container runs as UID 1001, which has no passwd entry on the host: use chown with numeric ids
+# (coreutils "install -o 1001" rejects an unknown numeric user on uutils-based systems such as Ubuntu 25.10+)
+mkdir -p "$OUT_DIR" && chown 1001:0 "$OUT_DIR" && chmod 0750 "$OUT_DIR"
 
 # Shared files: a real file in this folder wins; otherwise the example seeds the first install only.
+# Env files are read by the Docker daemon (root): 0600. aws-config is read INSIDE the container by
+# UID 1001 (group 0), so it must be group-readable: 0640.
 for name in common.env aws-config image.env; do
+  mode=0600; [[ $name == aws-config ]] && mode=0640
   if [[ -f "$SRC/$name" ]]; then
-    install -m 0600 "$SRC/$name" "$CONF_DIR/$name"
+    install -m "$mode" -g 0 "$SRC/$name" "$CONF_DIR/$name"
   elif [[ ! -f "$CONF_DIR/$name" ]]; then
-    install -m 0600 "$SRC/$name.example" "$CONF_DIR/$name"
+    install -m "$mode" -g 0 "$SRC/$name.example" "$CONF_DIR/$name"
   fi
 done
 
@@ -47,7 +52,7 @@ done
 # Key material and CA bundles, readable by the container's group 0
 for f in "$SRC"/keys/*; do
   [[ "$(basename "$f")" == README.md ]] && continue
-  install -m 0640 -o 0 -g 0 "$f" "$CONF_DIR/keys/$(basename "$f")"
+  install -m 0640 "$f" "$CONF_DIR/keys/$(basename "$f")"
 done
 shopt -u nullglob
 

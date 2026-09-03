@@ -106,7 +106,10 @@ region = us-east-1
 ```
 
 boto3 assumes the role from the VM's instance identity and refreshes the session by itself; the scanner does not
-know it is reading another account. In each member account create `dspm-scanner-readonly` from
+know it is reading another account. Sessions last one hour by default and are renewed before they expire, so
+a scan longer than an hour keeps running; `duration_seconds = 43200` in the profile stretches a single session to 12
+hours when the member role's maximum allows it, which refresh makes unnecessary. Only long-lived keys belong in an
+instance env: the worker does not read `AWS_SESSION_TOKEN`, so temporary keys from a manual AssumeRole would fail. In each member account create `dspm-scanner-readonly` from
 `aws/member-role-trust.json` (trusts the VM's instance role plus the external id) and `aws/member-role-policy.json`.
 That policy allows list and get **only for requests in `REGION`**, so a bucket that lives elsewhere fails loudly
 instead of being read across the border (S3 would redirect and boto3 would follow); `GetBucketLocation` stays
