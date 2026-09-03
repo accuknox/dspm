@@ -1,0 +1,12 @@
+# Nightly run of one instance. Move a single instance to another hour with a drop-in:
+#   systemctl edit dspm@<instance>.timer   ->   [Timer]  OnCalendar=  OnCalendar=*-*-* 03:00:00
+[Unit]
+Description=DSPM nightly scan · %i
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

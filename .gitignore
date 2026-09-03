@@ -224,3 +224,9 @@ __marimo__/
 .streamlit/secrets.toml
 
 output/
+# VM deployment (deployments/vm): real configuration never leaves the VM; only the *.example files are committed
+deployments/vm/common.env
+deployments/vm/aws-config
+deployments/vm/instances/*.env
+deployments/vm/keys/*
+!deployments/vm/keys/README.md

@@ -63,8 +63,8 @@ There are two entry points:
 | `OBJECT_TYPE` | yes | `S3` |
 | `OBJECT_NAME` | yes | Bucket name |
 | `AWS_ACCOUNT_ID` | yes | Account that owns the bucket(s); recorded in the findings and required by the CSPM backend |
-| `AWS_ACCESS_KEY_ID` | yes | IAM credentials with `s3:ListBucket` + `s3:GetObject` |
-| `AWS_SECRET_ACCESS_KEY` | yes | |
+| `AWS_ACCESS_KEY_ID` | no | Static IAM credentials with `s3:ListBucket` + `s3:GetObject`. Leave both unset to use the instance profile / IRSA, or `AWS_PROFILE` + `AWS_CONFIG_FILE` for an assume-role profile into another account (see `deployments/vm/README.md`) |
+| `AWS_SECRET_ACCESS_KEY` | no | with `AWS_ACCESS_KEY_ID` |
 
 Objects larger than 100 MB are skipped. Archives (`.zip/.tar/.gz/.bz2`) are unpacked and scanned recursively; CSV/TSV, Parquet, Excel, JSON, XML, PDF, DOCX and images (OCR) have dedicated parsers, everything else falls back to plain-text scanning.
 
@@ -413,9 +413,12 @@ Not copied (deliberately): LLM verification of matches (Cyera, Varonis "only for
 - **MongoDB / DocumentDB**: use URI parameters: `DB_URI=mongodb://user:pass@host:27017/?tls=true&tlsCAFile=/certs/global-bundle.pem` (DocumentDB requires TLS with the Amazon CA bundle). # pragma: allowlist secret
 - Mount the CA bundle into the container (e.g. via a ConfigMap/Secret volume) and reference it by path.
 
-## Deployment (OpenShift / Kubernetes)
+## Deployment
 
-`deploy/openshift-cronjob.yaml` contains a CronJob + Secret template that runs under the restricted SCC: the image runs as a non-root arbitrary UID (group-0 writable `/app`), takes all credentials from a Secret, and writes findings to an `emptyDir` mounted at `OUTPUT_DIR`.
+Everything lives under [`deployments/`](deployments/README.md):
+
+* [`deployments/vm/`](deployments/vm/README.md) - **recommended**: one VM per region, one scanner instance (container) per credential set (an AWS account for S3, a host for databases, a tenant for SaaS), each driven by its own env file and started by a systemd timer. Cross-account S3 uses an assume-role profile in the mounted AWS config, no keys. Nothing in the scanner is specific to it.
+* [`deployments/kubernetes/cronjob.yaml`](deployments/kubernetes/cronjob.yaml) - CronJob + Secret template for OpenShift / Kubernetes that runs under the restricted SCC: the image runs as a non-root arbitrary UID (group-0 writable `/app`), takes all credentials from a Secret, and writes findings to an `emptyDir` mounted at `OUTPUT_DIR`.
 
 Running the worker (`python -m src.dspm_scanner_worker_handler`, which is the image's `CMD`) always performs one scan run and exits; the exit code reflects the result — `0` when every target was scanned and uploaded successfully, `1` on scan errors, unsupported `OBJECT_TYPE`, or upload failure (details in the logs and in the `errors` field of the findings JSON) — so failed Jobs are visible in Kubernetes. The findings JSON stays in `OUTPUT_DIR/findings/`; the zip archive is only the upload vehicle and is removed after the upload attempt.
 
