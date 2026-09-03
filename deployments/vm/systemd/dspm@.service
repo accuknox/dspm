@@ -1,0 +1,30 @@
+# One DSPM scanner instance: dspm@<instance>.service runs the published container with
+# /etc/dspm/common.env + /etc/dspm/instances/<instance>.env. Started by dspm@<instance>.timer
+# (or by dspm-run-all in sequential mode). Podman: replace /usr/bin/docker below.
+[Unit]
+Description=DSPM scan · %i
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# a large bucket can take hours; raise this before the longest expected run
+TimeoutStartSec=8h
+EnvironmentFile=/etc/dspm/image.env
+# the container runs as UID 1001 (no passwd entry on the host) and needs a writable findings directory of its own
+ExecStartPre=/usr/bin/mkdir -p /var/lib/dspm/output/%i
+ExecStartPre=/usr/bin/chown 1001:0 /var/lib/dspm/output/%i
+ExecStartPre=/usr/bin/chmod 0750 /var/lib/dspm/output/%i
+# refresh the pinned tag when the registry is reachable; an offline registry must not block a scan
+ExecStartPre=-/usr/bin/docker pull ${DSPM_IMAGE}
+ExecStart=/usr/bin/docker run --rm --name dspm-%i \
+    --read-only --tmpfs /tmp:rw,size=4g \
+    --env-file /etc/dspm/common.env \
+    --env-file /etc/dspm/instances/%i.env \
+    -v /etc/dspm/aws-config:/etc/dspm/aws-config:ro \
+    -v /etc/dspm/keys:/etc/dspm/keys:ro \
+    -v /var/lib/dspm/output/%i:/app/output \
+    --cap-drop ALL --security-opt no-new-privileges \
+    ${DSPM_IMAGE}
+# on `systemctl stop` mid-run: SIGTERM the container and give it a minute; after a normal run it is already gone
+ExecStop=-/bin/sh -c '/usr/bin/docker stop -t 60 dspm-%i >/dev/null 2>&1 || true'

@@ -1,0 +1,11 @@
+# Sequential mode: run every instance in /etc/dspm/instances one after another,
+# so only one NER model is in memory at a time. Enabled by install.sh --sequential.
+[Unit]
+Description=DSPM scan · all instances, one after another
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=infinity
+ExecStart=/usr/local/bin/dspm-run-all

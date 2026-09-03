@@ -63,8 +63,8 @@ There are two entry points:
 | `OBJECT_TYPE` | yes | `S3` |
 | `OBJECT_NAME` | yes | Bucket name |
 | `AWS_ACCOUNT_ID` | yes | Account that owns the bucket(s); recorded in the findings and required by the CSPM backend |
-| `AWS_ACCESS_KEY_ID` | yes | IAM credentials with `s3:ListBucket` + `s3:GetObject` |
-| `AWS_SECRET_ACCESS_KEY` | yes | |
+| `AWS_ACCESS_KEY_ID` | no | Static IAM credentials with `s3:ListBucket` + `s3:GetObject`. Leave both unset to use the instance profile / IRSA, or `AWS_PROFILE` + `AWS_CONFIG_FILE` for an assume-role profile into another account (see `deployments/vm/README.md`) |
+| `AWS_SECRET_ACCESS_KEY` | no | with `AWS_ACCESS_KEY_ID` |
 
 Objects larger than 100 MB are skipped. Archives (`.zip/.tar/.gz/.bz2`) are unpacked and scanned recursively; CSV/TSV, Parquet, Excel, JSON, XML, PDF, DOCX and images (OCR) have dedicated parsers, everything else falls back to plain-text scanning.
 
@@ -392,32 +392,11 @@ Rules of the contract:
 4. Files of any origin go through `src/scanners/files.iter_units(path, resource_id, config)` — an object-store connector only downloads.
 5. New detectors are `Rule`s in `src/engine/recognizers/` plus a `fixtures/findings-mapping.json` entry, and, only if they deviate from their category, a `DetectorPolicy` in `src/engine/policy.py`.
 
-## How the vendors do it
-
-What the design above copies, with sources:
-
-* **Detector = pattern + validation + context policy.** Macie's managed data identifiers require a keyword within 30 characters for ambiguous types (SSN, bank account, passport, birth date, AWS secret key) and none for self-describing formats; custom identifiers add keywords (max match distance 50, 1–300), ignore words and occurrence thresholds ("if an object contains fewer occurrences than the lowest threshold, Macie doesn't create a finding") — [keyword requirements](https://docs.aws.amazon.com/macie/latest/user/managed-data-identifiers-keywords.html), [custom identifiers](https://docs.aws.amazon.com/macie/latest/user/cdis-options.html). Purview SITs are a primary element plus supporting elements within a proximity window (250 characters), with confidence low 65 / medium 75 / high 85 and the guidance to "use high confidence patterns with low counts, say five to 10, and low confidence patterns with higher counts, say 20 or more" — [sensitive information types](https://learn.microsoft.com/en-us/purview/sit-sensitive-information-type-learn-about).
-* **Column names are context.** Macie treats a keyword in the column name or in any element of the JSON path as proximity; Google SDP: "for tabular data, the context includes the column name" ([InspectConfig](https://docs.cloud.google.com/sensitive-data-protection/docs/reference/rest/v2/InspectConfig)); Sentra raises certainty when "the column is named credit card number" or an expiry/CVV column sits next to it ([Sentra](https://www.sentra.io/blog/building-a-better-dspm)).
-* **Discrete confidence.** Google SDP POSSIBLE ("signals can include passing checksums; lack of a strong contextual clue") / LIKELY / VERY_LIKELY, minimum POSSIBLE by default ([likelihood](https://docs.cloud.google.com/sensitive-data-protection/docs/likelihood)); Nightfall's "Possible is triggered by the appearance of the token without considering context", recommended minimum Likely ([Nightfall](https://help.nightfall.ai/detection_platform/faq/confidence_levels)); Wiz reports "classification confidence levels for each finding" with configurable thresholds ([Wiz DSPM Q&A](https://www.securityscientist.net/blog/12-questions-and-answers-about-wiz-dspm-wiz/)).
-* **Counts and density decide.** Orca: "a single, random nine-digit number in a file is unlikely to be a real Social Security number versus a file containing many"; custom identifiers carry count/density thresholds and column-name allow/deny lists ([Orca](https://orca.security/resources/blog/custom-data-detection/)). Sentra: "if 50% of values are valid credit card numbers, the whole column is labelled as such". Nightfall: minimum number of findings per detector "within the same message or file". presidio-structured picks a column's entity as the most common one across sampled cells.
-* **Negative evidence.** Google exclusion rules (dictionary, regex, exclude-if-another-infoType, exclude-by-hotword "allows you to exclude an entire column"), Macie ignore words and allow lists, Varonis negative keywords ([Varonis](https://www.varonis.com/blog/data-classification-deep-dive)), Gitleaks stopwords / allowlists, TruffleHog verified-vs-unverified results.
-* **Sampling to confidence.** Wiz: "statistical sampling of a sufficient number of records provides high-confidence classification results … incrementally expanding the sample until statistical confidence is reached", metadata-only for logs, full content for unstructured files ([Wiz](https://www.wiz.io/blog/wiz-data-classification)). Macie samples representative objects per bucket/prefix/type breadth-first and never re-analyses unchanged objects ([Macie automated discovery](https://docs.aws.amazon.com/macie/latest/user/discovery-asdd-how-it-works.html)). Cyera clones database snapshots and clusters similar files, sampling each cluster ([Cyera](https://www.cyera.com/blog/advancing-sensitive-data-classification-in-the-age-of-ai)).
-* **Identity context.** Cyera enriches classifications with data-subject role, region and identifiability and uses NER to tell SSNs from employee ids ([Cyera](https://www.cyera.com/blog/understanding-data-in-context-an-llm-driven-approach-to-data-classification)); Purview's example SIT requires an SSN to sit within 250 characters of a Name, DateOfBirth or AccountNumber.
-* **One pipeline, many sources.** Wiz scans S3, Azure Blob, GCS, RDS, BigQuery, DynamoDB and Snowflake through the same classifier library with "structural analysis and content sampling"; Macie applies one keyword model with three proximity rules — columnar, record-based, unstructured — which is exactly the `Record` (columnar / record shape) vs `TextBlob` split here.
-
-Not copied (deliberately): LLM verification of matches (Cyera, Varonis "only for ambiguous content") and API-level secret verification (TruffleHog) — both call out of the scanner with customer data.
-
 ## TLS to databases
 
 - **SQL engines**: pass DBAPI options via the target's `connect_args` (master mode), e.g. `{"sslmode": "verify-full", "sslrootcert": "/certs/rds-ca.pem"}` for PostgreSQL — or put them on the DSN: `DB_URI=postgresql+psycopg2://user:pass@host:5432/db?sslmode=require`. # pragma: allowlist secret
 - **MongoDB / DocumentDB**: use URI parameters: `DB_URI=mongodb://user:pass@host:27017/?tls=true&tlsCAFile=/certs/global-bundle.pem` (DocumentDB requires TLS with the Amazon CA bundle). # pragma: allowlist secret
 - Mount the CA bundle into the container (e.g. via a ConfigMap/Secret volume) and reference it by path.
-
-## Deployment (OpenShift / Kubernetes)
-
-`deploy/openshift-cronjob.yaml` contains a CronJob + Secret template that runs under the restricted SCC: the image runs as a non-root arbitrary UID (group-0 writable `/app`), takes all credentials from a Secret, and writes findings to an `emptyDir` mounted at `OUTPUT_DIR`.
-
-Running the worker (`python -m src.dspm_scanner_worker_handler`, which is the image's `CMD`) always performs one scan run and exits; the exit code reflects the result — `0` when every target was scanned and uploaded successfully, `1` on scan errors, unsupported `OBJECT_TYPE`, or upload failure (details in the logs and in the `errors` field of the findings JSON) — so failed Jobs are visible in Kubernetes. The findings JSON stays in `OUTPUT_DIR/findings/`; the zip archive is only the upload vehicle and is removed after the upload attempt.
 
 ## Tests
 

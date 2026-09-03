@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TrustTheRegionScannerVm",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::VM_ACCOUNT_ID:role/dspm-scanner-vm"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "EXTERNAL_ID"
+        }
+      }
+    }
+  ]
+}
