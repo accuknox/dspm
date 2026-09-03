@@ -1,0 +1,27 @@
+# AWS shared config for the S3 instances (common.env sets AWS_CONFIG_FILE=/etc/dspm/aws-config).
+# One profile per member account; an S3 instance selects its profile with AWS_PROFILE=<name>.
+# credential_source = Ec2InstanceMetadata means: the VM's instance role assumes the member role and
+# boto3 refreshes the session on its own. No access keys anywhere.
+#
+# Member account: role dspm-scanner-readonly from aws/member-role-trust.json + aws/member-role-policy.json.
+# VM account:     the instance role carries aws/instance-role-policy.json.
+
+[profile account-a]
+role_arn = arn:aws:iam::111122223333:role/dspm-scanner-readonly
+credential_source = Ec2InstanceMetadata
+external_id = REPLACE_WITH_EXTERNAL_ID
+region = us-east-1
+
+[profile account-b]
+role_arn = arn:aws:iam::444455556666:role/dspm-scanner-readonly
+credential_source = Ec2InstanceMetadata
+external_id = REPLACE_WITH_EXTERNAL_ID
+region = us-east-1
+
+# S3-compatible stores (OCI Object Storage, Swift / Ceph RGW): the keys and the endpoint go in the
+# instance env (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3); the profile only
+# switches to path-style addressing:
+# [profile oci-objectstorage]
+# region = us-ashburn-1
+# s3 =
+#     addressing_style = path

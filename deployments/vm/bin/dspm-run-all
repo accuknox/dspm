@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Run every DSPM scanner instance in turn (used by dspm-all.service).
+# `systemctl start` on a oneshot unit blocks until it finishes, so instances never overlap and
+# only one NER model is in memory at a time. Continues past failures; exits 1 if any instance failed.
+set -uo pipefail
+
+failed=()
+ran=0
+for f in /etc/dspm/instances/*.env; do
+  [[ -f "$f" ]] || continue
+  name="$(basename "$f" .env)"
+  ran=$((ran + 1))
+  echo "dspm-run-all: starting $name"
+  if systemctl start "dspm@$name.service"; then
+    echo "dspm-run-all: $name finished"
+  else
+    echo "dspm-run-all: $name FAILED (journalctl -u dspm@$name.service)" >&2
+    failed+=("$name")
+  fi
+done
+
+if [[ $ran -eq 0 ]]; then
+  echo "dspm-run-all: no instance files in /etc/dspm/instances" >&2
+  exit 0
+fi
+if [[ ${#failed[@]} -gt 0 ]]; then
+  echo "dspm-run-all: failed: ${failed[*]}" >&2
+  exit 1
+fi

@@ -11,23 +11,27 @@ RUN apt-get update && \
 # Set application working directory
 WORKDIR /app
 
-# Copy requirements
+# Install Python package dependencies first for better layer caching
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy settings
+# Copy settings loader and application source (all secrets come from env, never the image)
 COPY settings.py .
-
-# Copy application source code
 COPY src/ ./src/
 
-# Create directory for scan findings
-RUN mkdir -p /app/output
+# PYTHONPATH makes settings and src importable regardless of the working directory
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    OUTPUT_DIR=/app/output
 
-# Make Python able to import settings and src
-ENV PYTHONPATH=/app
+# Precompile bytecode: read-only root filesystems cannot cache it at runtime
+RUN python -m compileall -q /app
+
+# OpenShift runs containers as a random non-root UID in the root group:
+# group 0 needs the same permissions as the owner
+RUN mkdir -p /app/output && chgrp -R 0 /app && chmod -R g=u /app
+
+USER 1001
 
 # Run the scanner
 CMD ["python", "-m", "src.dspm_scanner_worker_handler"]

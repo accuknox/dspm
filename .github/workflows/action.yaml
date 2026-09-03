@@ -7,7 +7,7 @@ on:
 
 env:
   IMAGE_NAME: dspm
-  ECR_REGISTRY: 956994857092.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: public.ecr.aws/k9v9d5v2
   AWS_REGION: us-east-1
 
 jobs:
@@ -31,8 +31,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
 
       - name: Set up QEMU (for multi-arch builds)
         uses: docker/setup-qemu-action@v2
