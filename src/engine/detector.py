@@ -114,11 +114,25 @@ def resolve_overlaps(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         drop = False
         for k in kept:
             same = k["detector"] == f["detector"]
+            if f.get("encoded") or k.get("encoded"):
+                # Decoded values share the outer payload's coordinates. Collapse
+                # only duplicate values from the same/nested container, including
+                # a JWT claim also found by base64 scanning of its payload. Distinct
+                # email claims (or other entities) within that payload survive.
+                if (
+                    same and k.get("encoded") and f.get("encoded")
+                    and k["value"] == f["value"]
+                    and (
+                        k["start"] <= f["start"] and f["end"] <= k["end"]
+                        or f["start"] <= k["start"] and k["end"] <= f["end"]
+                    )
+                ):
+                    drop = True
+                    break
+                continue
             if same and k["start"] <= f["start"] and f["end"] <= k["end"]:
                 drop = True  # duplicate or nested match of the same detector
                 break
-            if f.get("encoded"):
-                continue
             if priority_of(k) <= priority_of(f):
                 continue
             overlap = min(k["end"], f["end"]) - max(k["start"], f["start"])

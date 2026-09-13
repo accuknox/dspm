@@ -20,6 +20,25 @@ from src.engine.policy import DetectorPolicy
 MAX_DISTINCT_TRACKED = 2000
 
 
+@dataclass(frozen=True)
+class MatchSource:
+    """Source coordinates and confidence before record/column promotion."""
+
+    cell_id: int
+    start: int
+    end: int
+    independent: bool
+    encoded: bool
+
+    def overlaps(self, other: "MatchSource") -> bool:
+        # Encoded findings use their container's coordinates, not the decoded
+        # value's coordinates. A shared container does not imply a collision.
+        if self.cell_id != other.cell_id or self.encoded or other.encoded:
+            return False
+        overlap = min(self.end, other.end) - max(self.start, other.start)
+        return overlap > 0 and overlap / max(1, self.end - self.start) >= 0.8
+
+
 @dataclass
 class ColumnProfile:
     column: str
@@ -31,16 +50,33 @@ class ColumnProfile:
     distinct: Set[str] = field(default_factory=set)
     distinct_overflow: int = 0
     hinted: bool = False
-    validated: int = 0
+    sources: List[MatchSource] = field(default_factory=list)
+    sources_by_cell: Dict[int, List[MatchSource]] = field(default_factory=dict)
+    cell_tiers: Dict[int, str] = field(default_factory=dict)
+    validated_cells: Set[int] = field(default_factory=set)
 
-    def add(self, candidate: Dict[str, Any], formatted: Dict[str, Any]) -> None:
+    def add(
+        self, candidate: Dict[str, Any], formatted: Dict[str, Any],
+        cell_id: int, independent: bool,
+    ) -> None:
         self.items.append(formatted)
-        self.tiers[candidate["confidence"]] += 1
+        source = MatchSource(cell_id, candidate["start"], candidate["end"], independent, bool(candidate.get("encoded")))
+        self.sources.append(source)
+        self.sources_by_cell.setdefault(cell_id, []).append(source)
+        # A cell can contain many matches. Density, validation and the majority
+        # tier each get one vote per cell, while items retain every occurrence.
+        previous = self.cell_tiers.get(cell_id)
+        tier = candidate["confidence"]
+        if previous is None or rank(tier) > rank(previous):
+            if previous is not None:
+                self.tiers[previous] -= 1
+            self.cell_tiers[cell_id] = tier
+            self.tiers[tier] += 1
         if candidate.get("field_hint") or "field" in candidate.get("evidence", ()):
             self.hinted = True
         evidence = candidate.get("evidence", ())
         if candidate.get("validated") or "checksum" in evidence or "format" in evidence or any(str(e).startswith("key:") for e in evidence):
-            self.validated += 1
+            self.validated_cells.add(cell_id)
         digest = hashlib.sha1(str(candidate.get("value", "")).encode("utf-8", errors="ignore")).hexdigest()[:16]
         if digest in self.distinct:
             return
@@ -51,14 +87,19 @@ class ColumnProfile:
 
     @property
     def matches(self) -> int:
-        return len(self.items)
+        """Matching cells, not matching spans (always <= sampled cells)."""
+        return len(self.cell_tiers)
+
+    @property
+    def validated(self) -> int:
+        return len(self.validated_cells)
 
     @property
     def distinct_count(self) -> int:
         return len(self.distinct) + self.distinct_overflow
 
     def majority_tier(self) -> str:
-        """Highest tier reached by at least half of the matches."""
+        """Highest tier reached by at least half of the matching cells."""
         total = self.matches
         cumulative = 0
         for tier in reversed(TIERS):

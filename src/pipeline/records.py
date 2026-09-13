@@ -53,10 +53,15 @@ class Cell:
         parts = [p for p in _PATH_SPLIT_RE.split(self.column) if p]
         return parts[-1] if parts else ""
 
+    @property
+    def context_scope(self) -> str:
+        """Containing object path, preserving indices so array members stay separate."""
+        return (self.field or self.column).rpartition(".")[0]
+
 
 @dataclass
 class Record:
-    """One row / document / item: its cells are each other's context."""
+    """One row/document/item; document identity context stays within each containing object."""
 
     cells: List[Cell]
     shape: str = COLUMNAR

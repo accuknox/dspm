@@ -282,6 +282,8 @@ Like the database targets, `password_secret` (an AWS Secrets Manager ARN) can su
 
 ## Classification
 
+See the [architecture diagram and code map](docs/architecture.md) for the implemented scan pipeline and proposed DSPM components, also available as [PNG](docs/architecture.png) and [editable SVG](docs/architecture.svg).
+
 ```
 connector  ──►  Record / TextBlob stream  ──►  src/pipeline (per unit)  ──►  findings
                                                     │
@@ -297,6 +299,8 @@ The code is split the way the vendor engines we studied are (Wiz, Cyera, Orca, S
 ### Confidence tiers
 
 Every finding carries `confidence` and `evidence`:
+
+Confidence tiers express heuristic evidence strength, not calibrated probabilities of correctness.
 
 | Tier | Meaning | Examples |
 |---|---|---|
@@ -328,18 +332,20 @@ Structured data carries its strongest signal in the field name (`DetectionEngine
 
 ### Column, record and file verdicts (`src/pipeline`)
 
-* **Column density** — a column whose sampled non-empty values match a detector at `column_ratio` (default 50 %) with at least `column_min_matches` distinct values is classified as that detector one tier above its cells: 40 SSN-shaped values under a meaningless header are a `likely` SSN column; a column of valid e-mails is `very_likely`. An isolated `possible` hit in an otherwise clean column is noise and stays hidden.
+* **Column density** — a column whose sampled non-empty cells match a detector at `column_ratio` (default 50 %) with at least `column_min_matches` matching cells and distinct values is classified as that detector one tier above its cells. Each cell contributes once, even if it contains several matches; validation density and the majority confidence tier also count cells. Forty SSN-shaped values under a meaningless header can classify a column, while three shapes in one of six cells represent 1/6 density, not 3/6.
 * **Unit-name context** — the table, collection, sheet or object name is part of the path to a value (Macie counts a keyword "in the name of an element in the path"): a `possible` card number in `credit_cards.number` or an SSN-shaped value in `ssn_export.csv` is `likely` (`unit:<name>`). Only `possible` candidates are lifted; very weak patterns still need their column name.
-* **Sibling columns** — companions named for the detector raise its column one more tier (Sentra): `expiry`/`cvv` next to a card column, `routing`/`ifsc`/`swift` next to a bank account, `date_of_birth`/`first_name` next to a national id (`siblings:<columns>`).
-* **Record corroboration** — a `possible` national id or card in a row/document that also carries two identity signals (name, e-mail, phone, address, birth date) becomes `likely` (`record:identity`).
-* **Column exclusivity** — once a column is classified, other detectors' hits in it are coincidences (a phone number that happens to pass the NHS mod-11 check) and are dropped unless `very_likely` on their own (Google SDP's exclude-if-another-infoType-matched).
+* **Sibling columns** — companion names can raise an established column verdict one more tier: `expiry`/`cvv` next to a card column, for example (`siblings:<columns>`). They must share the same parent field path. A sibling name elsewhere in the unit cannot promote an isolated weak match on its own.
+* **Record corroboration** — eligible `possible` identifiers next to two identity signals become `likely` (`record:identity`). For documents, those signals must belong to the same containing object; separate array members remain separate contexts. Bare-number and weak-checksum candidates marked `needs_context` require stronger support, such as a detector-specific field/keyword or sufficient column density; a nearby name and email alone do not establish their type.
+* **Column exclusivity** — the dominant detector suppresses weak alternative interpretations, such as a phone number that happens to pass an NHS checksum. Independently supported findings in separate spans or cells remain reportable: a notes field can contain both email addresses and phone numbers, and an email-heavy column can contain an explicitly labelled SSN. Record or column promotion alone does not establish independent support.
 * **Minimum counts** — in a document or a mixed column, `min_count` distinct `possible` hits of one detector become `likely` (`count:<n>`): a file with 30 SSN-shaped numbers is not a coincidence, one is.
-* **Aggregation** — a (detector, column) pair with `aggregation_threshold` or more hits collapses into one column-level finding carrying `aggregated`, `occurrences`, `column`, `column_sampled`, `column_matches`, `column_ratio`.
+* **Aggregation** — a (detector, column) pair with `aggregation_threshold` or more hits collapses into one column-level finding. `occurrences` counts findings; `column_matches` and `column_validated_matches` count matching cells and cells with validation evidence. `column_sampled` is the non-empty cell denominator for `column_ratio` and `column_validated_ratio`. Validation evidence includes checksums and recognized formats; it does not prove an identity or credential is real. These details are available in pipeline findings; the worker's grouped output currently retains counts and confidence but omits the column statistics.
 * **Allow lists** — `allow_list` / `allow_regex` suppress known values (public contact numbers, sample data), like Macie allow lists.
 
 ### Sampling
 
-Connectors read up to `sample_limit` rows/documents per unit (10 000). By default that is the head of the table; `SAMPLE_STRATEGY=random` (or `sample_strategy` per target) draws a random sample instead — `TABLESAMPLE SYSTEM (p)` on PostgreSQL and MSSQL when the planner estimate says the table holds more than twice the limit (p is sized to about three times the limit before `LIMIT` cuts it), `$sample` on MongoDB, the head on MySQL/MariaDB where no cheap random read exists. With `adaptive_sampling` the pipeline stops reading a unit once `settle_min_records` records have been seen, no new (column, detector) pair appeared for `settle_window` records and no column sits within `settle_margin` of its classification ratio — Wiz's "expand the sample until statistical confidence is reached". Rows already read count in the stats.
+Connectors read up to `sample_limit` rows/documents per unit (10 000). By default that is the head of the table; `SAMPLE_STRATEGY=random` (or `sample_strategy` per target) draws a random sample instead — `TABLESAMPLE SYSTEM (p)` on PostgreSQL and MSSQL when the planner estimate says the table holds more than twice the limit (p is sized to about three times the limit before `LIMIT` cuts it), `$sample` on MongoDB, the head on MySQL/MariaDB where no cheap random read exists. With `adaptive_sampling` the pipeline stops reading a unit once `settle_min_records` records have been seen, no new (column, detector) pair appeared for `settle_window` records and no column sits within `settle_margin` of its classification ratio. Rows already read count in the stats.
+
+The current adaptive stop rule is a stability heuristic, not a statistical confidence bound. A stable sample, especially a head or page sample, does not guarantee discovery of rare sensitive rows or prove the unread portion is clean. For detectors that require validation density, the stop rule uses the validated cell ratio, as column classification does.
 
 ### Output
 
@@ -348,6 +354,16 @@ Every finding carries `resource_id`, `detector`, `category`, `severity`, `value`
 **Recognizer packs.** `src/engine/recognizers/` holds 159 country-specific and generic recognizers across 62 region packs as native `Rule` objects (`src/engine/rules.py`: pattern scores, context words, validators/invalidators; test vectors in `tests/test_recognizers_*.py`). Rules are grouped by region pack; generic ones (IBAN, crypto wallets, IP, MAC, IMEI, ICCID, VIN, passport MRZ, coordinates, ICD-10 / NDC codes, medical record numbers) always run, `URL`/`UUID` are shipped disabled. Validators return True (checksum holds), False (dropped) or None where the algorithm is not authoritative for every number (Danish CPR after 2007, Latvian 32-prefixed codes, UK UTR, Mexican RFC). Every detector name must exist in `fixtures/findings-mapping.json` (`tests/test_detector_names.py`).
 
 **Regression corpus.** `tests/fixtures/detection_corpus.json` is an anonymised corpus built from real Postgres/Mongo scans: 370+ reviewed false positives that must stay silent and 160+ true positives that must stay detected (`tests/test_regression_corpus.py`). `tests/test_pipeline.py` covers the column/record/file rules and the connector contract.
+
+The original corpus checks selected expected/forbidden detectors; its reported precision and recall are targeted regression measures. The additional fully labelled synthetic corpus, `tests/fixtures/accuracy_cases.json`, also counts unexpected detections on positive cases and checks exact values and cell/blob locations. It covers mixed content, sparse weak matches and encoded payloads. Run it with:
+
+```bash
+python -m scripts.evaluate_accuracy --check --output /tmp/dspm-accuracy.json
+```
+
+The evaluator disables aggregation, reports per-detector precision/recall/F1, and writes only case identifiers and counts, not detected values. Undefined metrics are `null`. These development cases are not a held-out production benchmark. See the [competitive assessment and accuracy review](docs/dspm-competitive-assessment.md) for sources, measured changes and the next engineering priorities.
+
+The current tuning priority is reducing false alarms. The additional `tests/fixtures/false_alarm_cases.json` corpus covers weak numeric references beside identity fields, context crossing between nested objects or array members, and positive controls. Run it with `python -m scripts.evaluate_accuracy --corpus tests/fixtures/false_alarm_cases.json --check`. The evaluator accepts flat `rows`, nested `documents`, or `text` cases. See [false-alarm reduction](docs/false-alarm-reduction.md) for measured results and the recall tradeoff.
 
 **Sample dataset.** `sample_data/all_detectors.jsonl` / `.txt` hold one synthetic example per detector (built by `python -m tests.sample_dataset_builder`; `--check` scans them and lists anything not detected) — scan them to see every finding type the engine can produce, and `tests/test_sample_dataset.py` keeps them in sync with the catalogue.
 

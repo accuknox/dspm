@@ -328,7 +328,8 @@ def test_classified_column_is_exclusive():
     out = clf.finish()
     phone_detectors = {f["detector"] for f in out if "Column 'phone'" in f["location"]}
     assert phone_detectors == {"Phone Number"}, phone_detectors
-    # the same coincidence in a column that has no verdict of its own is still promoted by the record
+    # A bare checksum coincidence also stays possible without a dominant column:
+    # generic identity signals do not establish that it is a medical identifier.
     clf = UnitClassifier(engine, "unit://customers", unit_name="customers")
     clf.feed(
         Record([
@@ -337,7 +338,7 @@ def test_classified_column_is_exclusive():
             Cell(nhs_shaped, "ref", "Row 0, Column 'ref'"),
         ]),
     )
-    assert {f["detector"] for f in clf.finish() if "Column 'ref'" in f["location"]} == {"UK_NHS"}
+    assert [f for f in clf.finish() if "Column 'ref'" in f["location"]] == []
 
 
 # --------------------------------------------------------------------------- records

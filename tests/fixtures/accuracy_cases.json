@@ -1,0 +1,400 @@
+{
+  "schema_version": 1,
+  "description": "Fully labelled synthetic diagnostic cases. Values do not establish real identities or live credentials. Not a production benchmark.",
+  "config": {
+    "enabled_regions": [
+      "US",
+      "IN",
+      "GB"
+    ],
+    "ner": false,
+    "min_confidence": "likely"
+  },
+  "cases": [
+    {
+      "id": "sparse_ssn_shapes",
+      "purpose": "One matching cell in six must not create a 50% column verdict from three weak matches.",
+      "rows": [
+        {
+          "notes": "201-21-4301 202-22-4302 203-23-4303"
+        },
+        {
+          "notes": "Nothing to report"
+        },
+        {
+          "notes": "Nothing to report"
+        },
+        {
+          "notes": "Nothing to report"
+        },
+        {
+          "notes": "Nothing to report"
+        },
+        {
+          "notes": "Nothing to report"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "id": "mixed_notes_email_phone",
+      "purpose": "Independent sensitive values in the same cell must coexist.",
+      "rows": [
+        {
+          "notes": "user0@acme-corp.io; telephone +44 20 7946 0958"
+        },
+        {
+          "notes": "user1@acme-corp.io; telephone +44 20 7946 0958"
+        },
+        {
+          "notes": "user2@acme-corp.io; telephone +44 20 7946 0958"
+        },
+        {
+          "notes": "user3@acme-corp.io; telephone +44 20 7946 0958"
+        },
+        {
+          "notes": "user4@acme-corp.io; telephone +44 20 7946 0958"
+        }
+      ],
+      "expected": [
+        {
+          "detector": "Email",
+          "value": "user0@acme-corp.io",
+          "location": "row:0:notes"
+        },
+        {
+          "detector": "Phone Number",
+          "value": "+44 20 7946 0958",
+          "location": "row:0:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user1@acme-corp.io",
+          "location": "row:1:notes"
+        },
+        {
+          "detector": "Phone Number",
+          "value": "+44 20 7946 0958",
+          "location": "row:1:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user2@acme-corp.io",
+          "location": "row:2:notes"
+        },
+        {
+          "detector": "Phone Number",
+          "value": "+44 20 7946 0958",
+          "location": "row:2:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user3@acme-corp.io",
+          "location": "row:3:notes"
+        },
+        {
+          "detector": "Phone Number",
+          "value": "+44 20 7946 0958",
+          "location": "row:3:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user4@acme-corp.io",
+          "location": "row:4:notes"
+        },
+        {
+          "detector": "Phone Number",
+          "value": "+44 20 7946 0958",
+          "location": "row:4:notes"
+        }
+      ]
+    },
+    {
+      "id": "mixed_column_rare_ssn",
+      "purpose": "A majority email column must preserve an explicitly labelled SSN in another row.",
+      "rows": [
+        {
+          "notes": "user0@acme-corp.io"
+        },
+        {
+          "notes": "user1@acme-corp.io"
+        },
+        {
+          "notes": "user2@acme-corp.io"
+        },
+        {
+          "notes": "user3@acme-corp.io"
+        },
+        {
+          "notes": "user4@acme-corp.io"
+        },
+        {
+          "notes": "SSN: 219-09-9999"
+        }
+      ],
+      "expected": [
+        {
+          "detector": "Email",
+          "value": "user0@acme-corp.io",
+          "location": "row:0:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user1@acme-corp.io",
+          "location": "row:1:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user2@acme-corp.io",
+          "location": "row:2:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user3@acme-corp.io",
+          "location": "row:3:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "user4@acme-corp.io",
+          "location": "row:4:notes"
+        },
+        {
+          "detector": "US SSN",
+          "value": "219-09-9999",
+          "location": "row:5:notes"
+        }
+      ]
+    },
+    {
+      "id": "dense_ssn_column",
+      "purpose": "Distinct weak candidates across matching cells still corroborate a real column.",
+      "rows": [
+        {
+          "ref": "201-21-4301"
+        },
+        {
+          "ref": "202-22-4302"
+        },
+        {
+          "ref": "203-23-4303"
+        },
+        {
+          "ref": "204-24-4304"
+        },
+        {
+          "ref": "205-25-4305"
+        }
+      ],
+      "expected": [
+        {
+          "detector": "US SSN",
+          "value": "201-21-4301",
+          "location": "row:0:ref"
+        },
+        {
+          "detector": "US SSN",
+          "value": "202-22-4302",
+          "location": "row:1:ref"
+        },
+        {
+          "detector": "US SSN",
+          "value": "203-23-4303",
+          "location": "row:2:ref"
+        },
+        {
+          "detector": "US SSN",
+          "value": "204-24-4304",
+          "location": "row:3:ref"
+        },
+        {
+          "detector": "US SSN",
+          "value": "205-25-4305",
+          "location": "row:4:ref"
+        }
+      ]
+    },
+    {
+      "id": "repeated_single_template_value",
+      "purpose": "Repeated occurrences of one weak example do not meet the distinct-value requirement.",
+      "rows": [
+        {
+          "ref": "201-21-4301"
+        },
+        {
+          "ref": "201-21-4301"
+        },
+        {
+          "ref": "201-21-4301"
+        },
+        {
+          "ref": "201-21-4301"
+        },
+        {
+          "ref": "201-21-4301"
+        },
+        {
+          "ref": "201-21-4301"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "id": "explicit_single_ssn",
+      "purpose": "Explicitly named identifiers do not require a dense column.",
+      "rows": [
+        {
+          "ssn": "219-09-9999"
+        }
+      ],
+      "expected": [
+        {
+          "detector": "US SSN",
+          "value": "219-09-9999",
+          "location": "row:0:ssn"
+        }
+      ]
+    },
+    {
+      "id": "technical_numeric_fields",
+      "purpose": "Numeric technical fields must not become personal identifiers.",
+      "rows": [
+        {
+          "invoice_number": "219-09-9999",
+          "timestamp": "1700000000"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "id": "private_infrastructure",
+      "purpose": "Infrastructure addresses follow the default reporting policy.",
+      "text": "10.0.0.1 127.0.0.1",
+      "expected": []
+    },
+    {
+      "id": "placeholder_ssn",
+      "purpose": "Configured placeholder policy suppresses this synthetic template.",
+      "text": "SSN: 111-22-3333",
+      "expected": []
+    },
+    {
+      "id": "base64_two_emails",
+      "purpose": "Two decoded values share the encoded container span but are separate findings.",
+      "text": "eyJwcmltYXJ5IjoiYWxpY2VAYWNtZS1jb3JwLmlvIiwic2Vjb25kYXJ5IjoiYm9iQGFjbWUtY29ycC5pbyJ9",
+      "expected": [
+        {
+          "detector": "Email",
+          "value": "alice@acme-corp.io",
+          "location": "text"
+        },
+        {
+          "detector": "Email",
+          "value": "bob@acme-corp.io",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "plaintext_two_emails",
+      "purpose": "Both values are also detectable without encoding.",
+      "text": "{\"primary\":\"alice@acme-corp.io\",\"secondary\":\"bob@acme-corp.io\"}",
+      "expected": [
+        {
+          "detector": "Email",
+          "value": "alice@acme-corp.io",
+          "location": "text"
+        },
+        {
+          "detector": "Email",
+          "value": "bob@acme-corp.io",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "multiple_emails_per_cell",
+      "purpose": "Every occurrence remains available while each source cell contributes once to density.",
+      "rows": [
+        {
+          "notes": "first0@acme-corp.io second0@acme-corp.io"
+        },
+        {
+          "notes": "first1@acme-corp.io second1@acme-corp.io"
+        },
+        {
+          "notes": "first2@acme-corp.io second2@acme-corp.io"
+        }
+      ],
+      "expected": [
+        {
+          "detector": "Email",
+          "value": "first0@acme-corp.io",
+          "location": "row:0:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "second0@acme-corp.io",
+          "location": "row:0:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "first1@acme-corp.io",
+          "location": "row:1:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "second1@acme-corp.io",
+          "location": "row:1:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "first2@acme-corp.io",
+          "location": "row:2:notes"
+        },
+        {
+          "detector": "Email",
+          "value": "second2@acme-corp.io",
+          "location": "row:2:notes"
+        }
+      ]
+    },
+    {
+      "id": "explicit_cards",
+      "purpose": "Checksum-validated financial identifiers retain recall.",
+      "rows": [
+        {
+          "card_number": "4526018159083012"
+        },
+        {
+          "card_number": "4661318609139090"
+        },
+        {
+          "card_number": "4960308246281940"
+        }
+      ],
+      "expected": [
+        {
+          "detector": "Credit Card",
+          "value": "4526018159083012",
+          "location": "row:0:card_number"
+        },
+        {
+          "detector": "Credit Card",
+          "value": "4661318609139090",
+          "location": "row:1:card_number"
+        },
+        {
+          "detector": "Credit Card",
+          "value": "4960308246281940",
+          "location": "row:2:card_number"
+        }
+      ]
+    },
+    {
+      "id": "clean_prose",
+      "purpose": "Clean prose remains clean.",
+      "text": "The deployment completed successfully. No action is required.",
+      "expected": []
+    }
+  ]
+}
