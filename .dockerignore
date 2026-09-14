@@ -1,0 +1,4 @@
+venv/*
+docs/*
+test/*
+sample_data/*
