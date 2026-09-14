@@ -7,9 +7,10 @@ until statistical confidence is reached"; Macie samples representative objects
 and never re-reads unchanged ones. SettleTracker is the stop rule for one unit:
 after a minimum number of records, when no new (column, detector) pair has
 appeared for a full window and no column sits within `margin` of its
-classification ratio, the verdicts will not change and reading more rows only
-costs time. Off by default (config adaptive_sampling); the fixed sample_limit
-still caps the read either way.
+classification ratio, the observed classifications are treated as stable. This
+heuristic does not bound sampling error or rule out sensitive data in unread
+rows; it is not a guarantee of statistical confidence. Off by default (config
+adaptive_sampling); the fixed sample_limit still caps the read either way.
 """
 from typing import Iterable, Tuple
 

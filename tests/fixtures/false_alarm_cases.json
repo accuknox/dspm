@@ -1,0 +1,843 @@
+{
+  "schema_version": 1,
+  "description": "Synthetic cases for reducing false alarms from context propagation; not a production benchmark.",
+  "config": {
+    "enabled_regions": [
+      "US",
+      "IN",
+      "GB"
+    ],
+    "ner": false,
+    "min_confidence": "likely"
+  },
+  "cases": [
+    {
+      "id": "numeric_references_beside_identity",
+      "purpose": "Synthetic non-sensitive numeric references; names and emails do not make checksum coincidences medical or tax IDs.",
+      "rows": [
+        {
+          "full_name": "Priya Sharma",
+          "email": "person0@acme-corp.io",
+          "ref": "9000000000"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person1@acme-corp.io",
+          "ref": "9000000001"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person2@acme-corp.io",
+          "ref": "9000000002"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person3@acme-corp.io",
+          "ref": "9000000003"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person4@acme-corp.io",
+          "ref": "9000000004"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person5@acme-corp.io",
+          "ref": "9000000005"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person6@acme-corp.io",
+          "ref": "9000000006"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person7@acme-corp.io",
+          "ref": "9000000007"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person8@acme-corp.io",
+          "ref": "9000000008"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person9@acme-corp.io",
+          "ref": "9000000009"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person10@acme-corp.io",
+          "ref": "9000000010"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person11@acme-corp.io",
+          "ref": "9000000011"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person12@acme-corp.io",
+          "ref": "9000000012"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person13@acme-corp.io",
+          "ref": "9000000013"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person14@acme-corp.io",
+          "ref": "9000000014"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person15@acme-corp.io",
+          "ref": "9000000015"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person16@acme-corp.io",
+          "ref": "9000000016"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person17@acme-corp.io",
+          "ref": "9000000017"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person18@acme-corp.io",
+          "ref": "9000000018"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person19@acme-corp.io",
+          "ref": "9000000019"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person20@acme-corp.io",
+          "ref": "9000000020"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person21@acme-corp.io",
+          "ref": "9000000021"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person22@acme-corp.io",
+          "ref": "9000000022"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person23@acme-corp.io",
+          "ref": "9000000023"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person24@acme-corp.io",
+          "ref": "9000000024"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person25@acme-corp.io",
+          "ref": "9000000025"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person26@acme-corp.io",
+          "ref": "9000000026"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person27@acme-corp.io",
+          "ref": "9000000027"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person28@acme-corp.io",
+          "ref": "9000000028"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person29@acme-corp.io",
+          "ref": "9000000029"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person30@acme-corp.io",
+          "ref": "9000000030"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person31@acme-corp.io",
+          "ref": "9000000031"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person32@acme-corp.io",
+          "ref": "9000000032"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person33@acme-corp.io",
+          "ref": "9000000033"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person34@acme-corp.io",
+          "ref": "9000000034"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person35@acme-corp.io",
+          "ref": "9000000035"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person36@acme-corp.io",
+          "ref": "9000000036"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person37@acme-corp.io",
+          "ref": "9000000037"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person38@acme-corp.io",
+          "ref": "9000000038"
+        },
+        {
+          "full_name": "Priya Sharma",
+          "email": "person39@acme-corp.io",
+          "ref": "9000000039"
+        }
+      ],
+      "expected": [
+        {
+          "location": "row:0:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:0:email",
+          "detector": "Email",
+          "value": "person0@acme-corp.io"
+        },
+        {
+          "location": "row:1:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:1:email",
+          "detector": "Email",
+          "value": "person1@acme-corp.io"
+        },
+        {
+          "location": "row:2:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:2:email",
+          "detector": "Email",
+          "value": "person2@acme-corp.io"
+        },
+        {
+          "location": "row:3:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:3:email",
+          "detector": "Email",
+          "value": "person3@acme-corp.io"
+        },
+        {
+          "location": "row:4:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:4:email",
+          "detector": "Email",
+          "value": "person4@acme-corp.io"
+        },
+        {
+          "location": "row:5:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:5:email",
+          "detector": "Email",
+          "value": "person5@acme-corp.io"
+        },
+        {
+          "location": "row:6:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:6:email",
+          "detector": "Email",
+          "value": "person6@acme-corp.io"
+        },
+        {
+          "location": "row:7:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:7:email",
+          "detector": "Email",
+          "value": "person7@acme-corp.io"
+        },
+        {
+          "location": "row:8:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:8:email",
+          "detector": "Email",
+          "value": "person8@acme-corp.io"
+        },
+        {
+          "location": "row:9:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:9:email",
+          "detector": "Email",
+          "value": "person9@acme-corp.io"
+        },
+        {
+          "location": "row:10:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:10:email",
+          "detector": "Email",
+          "value": "person10@acme-corp.io"
+        },
+        {
+          "location": "row:11:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:11:email",
+          "detector": "Email",
+          "value": "person11@acme-corp.io"
+        },
+        {
+          "location": "row:12:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:12:email",
+          "detector": "Email",
+          "value": "person12@acme-corp.io"
+        },
+        {
+          "location": "row:13:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:13:email",
+          "detector": "Email",
+          "value": "person13@acme-corp.io"
+        },
+        {
+          "location": "row:14:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:14:email",
+          "detector": "Email",
+          "value": "person14@acme-corp.io"
+        },
+        {
+          "location": "row:15:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:15:email",
+          "detector": "Email",
+          "value": "person15@acme-corp.io"
+        },
+        {
+          "location": "row:16:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:16:email",
+          "detector": "Email",
+          "value": "person16@acme-corp.io"
+        },
+        {
+          "location": "row:17:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:17:email",
+          "detector": "Email",
+          "value": "person17@acme-corp.io"
+        },
+        {
+          "location": "row:18:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:18:email",
+          "detector": "Email",
+          "value": "person18@acme-corp.io"
+        },
+        {
+          "location": "row:19:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:19:email",
+          "detector": "Email",
+          "value": "person19@acme-corp.io"
+        },
+        {
+          "location": "row:20:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:20:email",
+          "detector": "Email",
+          "value": "person20@acme-corp.io"
+        },
+        {
+          "location": "row:21:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:21:email",
+          "detector": "Email",
+          "value": "person21@acme-corp.io"
+        },
+        {
+          "location": "row:22:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:22:email",
+          "detector": "Email",
+          "value": "person22@acme-corp.io"
+        },
+        {
+          "location": "row:23:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:23:email",
+          "detector": "Email",
+          "value": "person23@acme-corp.io"
+        },
+        {
+          "location": "row:24:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:24:email",
+          "detector": "Email",
+          "value": "person24@acme-corp.io"
+        },
+        {
+          "location": "row:25:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:25:email",
+          "detector": "Email",
+          "value": "person25@acme-corp.io"
+        },
+        {
+          "location": "row:26:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:26:email",
+          "detector": "Email",
+          "value": "person26@acme-corp.io"
+        },
+        {
+          "location": "row:27:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:27:email",
+          "detector": "Email",
+          "value": "person27@acme-corp.io"
+        },
+        {
+          "location": "row:28:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:28:email",
+          "detector": "Email",
+          "value": "person28@acme-corp.io"
+        },
+        {
+          "location": "row:29:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:29:email",
+          "detector": "Email",
+          "value": "person29@acme-corp.io"
+        },
+        {
+          "location": "row:30:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:30:email",
+          "detector": "Email",
+          "value": "person30@acme-corp.io"
+        },
+        {
+          "location": "row:31:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:31:email",
+          "detector": "Email",
+          "value": "person31@acme-corp.io"
+        },
+        {
+          "location": "row:32:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:32:email",
+          "detector": "Email",
+          "value": "person32@acme-corp.io"
+        },
+        {
+          "location": "row:33:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:33:email",
+          "detector": "Email",
+          "value": "person33@acme-corp.io"
+        },
+        {
+          "location": "row:34:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:34:email",
+          "detector": "Email",
+          "value": "person34@acme-corp.io"
+        },
+        {
+          "location": "row:35:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:35:email",
+          "detector": "Email",
+          "value": "person35@acme-corp.io"
+        },
+        {
+          "location": "row:36:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:36:email",
+          "detector": "Email",
+          "value": "person36@acme-corp.io"
+        },
+        {
+          "location": "row:37:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:37:email",
+          "detector": "Email",
+          "value": "person37@acme-corp.io"
+        },
+        {
+          "location": "row:38:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:38:email",
+          "detector": "Email",
+          "value": "person38@acme-corp.io"
+        },
+        {
+          "location": "row:39:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "row:39:email",
+          "detector": "Email",
+          "value": "person39@acme-corp.io"
+        }
+      ]
+    },
+    {
+      "id": "name_in_a_different_row",
+      "purpose": "A name appearing elsewhere in the unit must not promote an isolated shape-only reference.",
+      "rows": [
+        {
+          "full_name": "Priya Sharma"
+        },
+        {
+          "ref": "219-09-9999"
+        }
+      ],
+      "expected": [
+        {
+          "location": "row:0:full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        }
+      ]
+    },
+    {
+      "id": "unrelated_json_objects",
+      "purpose": "Sensitive owner fields cannot corroborate a reference in an unrelated sibling object.",
+      "documents": [
+        {
+          "owner": {
+            "full_name": "Priya Sharma",
+            "email": "priya@acme-corp.io"
+          },
+          "telemetry": {
+            "ref": "219-09-9999"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "location": "doc:0:owner.full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "doc:0:owner.email",
+          "detector": "Email",
+          "value": "priya@acme-corp.io"
+        }
+      ]
+    },
+    {
+      "id": "unrelated_array_members",
+      "purpose": "Each array member is a separate identity context, even when column keys collapse indices.",
+      "documents": [
+        {
+          "people": [
+            {
+              "full_name": "Priya Sharma",
+              "email": "priya@acme-corp.io"
+            },
+            {
+              "ref": "219-09-9999"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "location": "doc:0:people[0].full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "doc:0:people[0].email",
+          "detector": "Email",
+          "value": "priya@acme-corp.io"
+        }
+      ]
+    },
+    {
+      "id": "same_json_object_corroboration",
+      "purpose": "A formatted synthetic SSN remains detectable when two identity signals are in the same object.",
+      "documents": [
+        {
+          "person": {
+            "full_name": "Priya Sharma",
+            "email": "priya@acme-corp.io",
+            "ref": "219-09-9999"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "location": "doc:0:person.full_name",
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma"
+        },
+        {
+          "location": "doc:0:person.email",
+          "detector": "Email",
+          "value": "priya@acme-corp.io"
+        },
+        {
+          "location": "doc:0:person.ref",
+          "detector": "US SSN",
+          "value": "219-09-9999"
+        }
+      ]
+    },
+    {
+      "id": "explicit_nhs_identifier",
+      "purpose": "A valid identifier under a detector-specific field name stays reportable.",
+      "rows": [
+        {
+          "nhs_number": "9434765919"
+        }
+      ],
+      "expected": [
+        {
+          "location": "row:0:nhs_number",
+          "detector": "UK_NHS",
+          "value": "9434765919"
+        }
+      ]
+    },
+    {
+      "id": "explicit_ssn_identifier",
+      "purpose": "A self-labelled SSN does not require nearby names or emails.",
+      "rows": [
+        {
+          "ssn": "219-09-9999"
+        }
+      ],
+      "expected": [
+        {
+          "location": "row:0:ssn",
+          "detector": "US SSN",
+          "value": "219-09-9999"
+        }
+      ]
+    },
+    {
+      "id": "dense_validated_identifier_column",
+      "purpose": "A genuinely dense column of distinct validated UTRs still provides statistical support.",
+      "rows": [
+        {
+          "ref": "9000000001"
+        },
+        {
+          "ref": "9000000015"
+        },
+        {
+          "ref": "9000000029"
+        },
+        {
+          "ref": "9000000032"
+        },
+        {
+          "ref": "9000000046"
+        }
+      ],
+      "expected": [
+        {
+          "location": "row:0:ref",
+          "detector": "GB_UTR",
+          "value": "9000000001"
+        },
+        {
+          "location": "row:1:ref",
+          "detector": "GB_UTR",
+          "value": "9000000015"
+        },
+        {
+          "location": "row:2:ref",
+          "detector": "GB_UTR",
+          "value": "9000000029"
+        },
+        {
+          "location": "row:3:ref",
+          "detector": "GB_UTR",
+          "value": "9000000032"
+        },
+        {
+          "location": "row:4:ref",
+          "detector": "GB_UTR",
+          "value": "9000000046"
+        }
+      ]
+    },
+    {
+      "id": "explicit_credentials",
+      "purpose": "Context changes must preserve explicit secret detection.",
+      "rows": [
+        {
+          "password": "VioletRiver9!Secure"
+        }
+      ],
+      "expected": [
+        {
+          "location": "row:0:password",
+          "detector": "Password Pattern",
+          "value": "VioletRiver9!Secure"
+        }
+      ]
+    },
+    {
+      "id": "weak_candidate_visible_on_request",
+      "purpose": "The stricter default reporting policy leaves possible candidates available for explicit review.",
+      "rows": [
+        {
+          "ref": "9434765919"
+        }
+      ],
+      "expected": [
+        {
+          "location": "row:0:ref",
+          "detector": "UK_NHS",
+          "value": "9434765919"
+        }
+      ],
+      "config": {
+        "min_confidence": "possible"
+      }
+    }
+  ]
+}
