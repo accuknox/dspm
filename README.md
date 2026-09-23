@@ -282,8 +282,6 @@ Like the database targets, `password_secret` (an AWS Secrets Manager ARN) can su
 
 ## Classification
 
-See the [architecture diagram and code map](docs/architecture.md) for the implemented scan pipeline and proposed DSPM components, also available as [PNG](docs/architecture.png) and [editable SVG](docs/architecture.svg).
-
 ```
 connector  ──►  Record / TextBlob stream  ──►  src/pipeline (per unit)  ──►  findings
                                                     │
