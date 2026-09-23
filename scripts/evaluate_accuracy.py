@@ -29,10 +29,12 @@ def classify_case(case, config):
     classifier = UnitClassifier(engine, f"benchmark://{case['id']}", config=config)
     if "rows" in case:
         for row_index, row in enumerate(case["rows"]):
-            classifier.feed(Record([
-                Cell(str(value), field, f"row:{row_index}:{field}")
-                for field, value in row.items() if value is not None
-            ]))
+            classifier.feed(
+                Record([
+                    Cell(str(value), field, f"row:{row_index}:{field}")
+                    for field, value in row.items() if value is not None
+                ]),
+            )
     elif "documents" in case:
         for index, document in enumerate(case["documents"]):
             classifier.feed(document_record(document, lambda path, i=index: f"doc:{i}:{path}"))

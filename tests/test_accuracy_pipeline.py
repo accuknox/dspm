@@ -28,11 +28,13 @@ def test_false_alarm_cases_preserve_expected_detections():
 
 def test_weak_checksum_stays_possible_beside_identity_fields():
     classifier = UnitClassifier(_engine(), "unit://refs", config={"min_confidence": "possible"})
-    classifier.feed(Record([
-        Cell("Priya Sharma", "full_name", "name"),
-        Cell("priya@acme-corp.io", "email", "email"),
-        Cell("9434765919", "ref", "ref"),
-    ]))
+    classifier.feed(
+        Record([
+            Cell("Priya Sharma", "full_name", "name"),
+            Cell("priya@acme-corp.io", "email", "email"),
+            Cell("9434765919", "ref", "ref"),
+        ]),
+    )
     refs = [f for f in classifier.finish() if f["location"] == "ref"]
     assert len(refs) == 1 and refs[0]["detector"] == "UK_NHS"
     assert refs[0]["confidence"] == "possible"
@@ -44,9 +46,11 @@ def test_sibling_names_alone_do_not_promote_an_isolated_card_shape():
     corpus = json.loads(DEFAULT_CORPUS.read_text(encoding="utf-8"))
     cards = next(case for case in corpus["cases"] if case["id"] == "explicit_cards")
     card = cards["rows"][0]["card_number"]
-    classifier.feed(Record([
-        Cell(card, "ref", "ref"), Cell("12/27", "expiry", "expiry"), Cell("123", "cvv", "cvv"),
-    ]))
+    classifier.feed(
+        Record([
+            Cell(card, "ref", "ref"), Cell("12/27", "expiry", "expiry"), Cell("123", "cvv", "cvv"),
+        ]),
+    )
     assert classifier.finish() == []
 
 
@@ -90,9 +94,11 @@ def test_evaluation_counts_extra_detections_on_positive_examples():
 def test_multiple_matches_count_as_one_cell_but_keep_occurrences():
     classifier = UnitClassifier(_engine(), "unit://notes", config={"aggregation_threshold": 2})
     for row in range(3):
-        classifier.feed(Record([
-            Cell(f"first{row}@acme-corp.io second{row}@acme-corp.io", "notes", f"Row {row}"),
-        ]))
+        classifier.feed(
+            Record([
+                Cell(f"first{row}@acme-corp.io second{row}@acme-corp.io", "notes", f"Row {row}"),
+            ]),
+        )
     findings = classifier.finish()
     assert len(findings) == 1
     finding = findings[0]
@@ -103,10 +109,12 @@ def test_multiple_matches_count_as_one_cell_but_keep_occurrences():
 
 def test_array_elements_are_separate_sampled_cells():
     classifier = UnitClassifier(_engine(), "unit://contacts", config={"aggregation_threshold": 2})
-    classifier.feed(document_record(
-        {"contacts": [{"email": f"person{i}@acme-corp.io"} for i in range(3)]},
-        lambda path: path,
-    ))
+    classifier.feed(
+        document_record(
+            {"contacts": [{"email": f"person{i}@acme-corp.io"} for i in range(3)]},
+            lambda path: path,
+        ),
+    )
     findings = classifier.finish()
     assert len(findings) == 1
     finding = findings[0]

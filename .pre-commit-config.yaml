@@ -32,7 +32,7 @@ repos:
     - id: detect-secrets
       args: ['--baseline', '.secrets.baseline']
       # findings-mapping carries sample values; the detection corpus is made of synthetic secrets by design
-      exclude: 'fixtures/findings-mapping.json|tests/fixtures/detection_corpus.json|README.md|^tests/|^sample_data/'
+      exclude: 'fixtures/findings-mapping-v1.json|fixtures/findings-mapping-v2.json|tests/fixtures/detection_corpus.json|README.md|^tests/|^sample_data/'
 
 
 
