@@ -1,7 +1,7 @@
 [
     {
         "Private Key Header": {
-            "finding_name": "Private key in plain text",
+            "finding_name": "Private key markers suggest embedded key material",
             "risk_factor": 9.8,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -27,7 +27,7 @@
             ]
         },
         "AWS Secret Access Key": {
-            "finding_name": "AWS secret access key in plain text",
+            "finding_name": "AWS secret access key is directly readable",
             "risk_factor": 9.8,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -55,7 +55,7 @@
             ]
         },
         "Password Pattern": {
-            "finding_name": "Password in plain text",
+            "finding_name": "Password values can be recovered from the content",
             "risk_factor": 9.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -84,7 +84,7 @@
             ]
         },
         "AWS Access Key": {
-            "finding_name": "AWS access key ID in plain text",
+            "finding_name": "AWS access key IDs reveal credential references",
             "risk_factor": 9.3,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -111,7 +111,7 @@
             ]
         },
         "API Key": {
-            "finding_name": "API key in plain text",
+            "finding_name": "A readable value is assigned to an API credential field",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -138,7 +138,7 @@
             ]
         },
         "Bearer Token": {
-            "finding_name": "Bearer token in plain text",
+            "finding_name": "Bearer authentication includes a recoverable token",
             "risk_factor": 8.7,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -165,7 +165,7 @@
             ]
         },
         "OAuth Token": {
-            "finding_name": "OAuth token in plain text",
+            "finding_name": "OAuth authorization material appears as an explicit value",
             "risk_factor": 8.7,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -191,7 +191,7 @@
             ]
         },
         "JWT Token": {
-            "finding_name": "JWT in plain text",
+            "finding_name": "A JSON Web Token carries encoded claims",
             "risk_factor": 8.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -218,7 +218,7 @@
             ]
         },
         "Secret.ActivationOrAuthKey": {
-            "finding_name": "Authentication key in plain text",
+            "finding_name": "Authentication material includes possible activation or session values",
             "risk_factor": 8.3,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -244,7 +244,7 @@
             ]
         },
         "Secret.PasswordHash": {
-            "finding_name": "Password hash exposed",
+            "finding_name": "Password hashes are available for offline analysis",
             "risk_factor": 8.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -271,7 +271,7 @@
             ]
         },
         "High Entropy Secret": {
-            "finding_name": "High-entropy secret detected",
+            "finding_name": "High entropy suggests a possible secret",
             "risk_factor": 7.5,
             "category": "Entropy-Based Secret Detection",
             "sensitivity": "Confidential",
@@ -296,7 +296,7 @@
             ]
         },
         "Secret.TokenLikeValue": {
-            "finding_name": "Potential token in plain text",
+            "finding_name": "An opaque value may be an authentication token",
             "risk_factor": 6.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Confidential",
@@ -321,7 +321,7 @@
             ]
         },
         "Credit Card": {
-            "finding_name": "Credit card number in plain text",
+            "finding_name": "Payment card numbers are visible without masking",
             "risk_factor": 9.2,
             "category": "Financial Data",
             "sensitivity": "Restricted",
@@ -350,7 +350,7 @@
             ]
         },
         "Bank Account": {
-            "finding_name": "Bank account number in plain text",
+            "finding_name": "Readable account numbers disclose banking references",
             "risk_factor": 7.8,
             "category": "Financial Data",
             "sensitivity": "Restricted",
@@ -379,7 +379,7 @@
             ]
         },
         "IBAN": {
-            "finding_name": "IBAN in plain text",
+            "finding_name": "International bank account details include an unmasked IBAN",
             "risk_factor": 7.5,
             "category": "Financial Data",
             "sensitivity": "Restricted",
@@ -405,7 +405,7 @@
             ]
         },
         "SWIFT/BIC": {
-            "finding_name": "SWIFT/BIC code detected",
+            "finding_name": "SWIFT/BIC values identify financial institutions",
             "risk_factor": 4.5,
             "category": "Financial Data",
             "sensitivity": "Internal",
@@ -430,7 +430,7 @@
             ]
         },
         "Healthcare Data Detection": {
-            "finding_name": "Health information in plain text",
+            "finding_name": "Health information is readable in the scanned content",
             "risk_factor": 8.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -462,7 +462,7 @@
             ]
         },
         "US SSN": {
-            "finding_name": "US Social Security number in plain text",
+            "finding_name": "US Social Security numbers appear as complete identifiers",
             "risk_factor": 9.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -490,7 +490,7 @@
             ]
         },
         "CA SIN": {
-            "finding_name": "Canadian Social Insurance Number in plain text",
+            "finding_name": "Canadian social insurance identifiers remain unmasked",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -516,7 +516,7 @@
             ]
         },
         "IN Aadhaar": {
-            "finding_name": "Aadhaar number in plain text",
+            "finding_name": "Aadhaar identity numbers are directly visible",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -544,7 +544,7 @@
             ]
         },
         "GB NINO": {
-            "finding_name": "UK National Insurance number in plain text",
+            "finding_name": "UK National Insurance references can be read in full",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -570,7 +570,7 @@
             ]
         },
         "IN PASSPORT": {
-            "finding_name": "Indian passport number in plain text",
+            "finding_name": "Indian passport numbers appear as readable document identifiers",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -596,7 +596,7 @@
             ]
         },
         "IN PAN": {
-            "finding_name": "Indian PAN in plain text",
+            "finding_name": "Indian PAN values disclose personal tax identifiers",
             "risk_factor": 7.8,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -622,7 +622,7 @@
             ]
         },
         "IN VOTER ID": {
-            "finding_name": "Indian voter ID in plain text",
+            "finding_name": "Indian voter identities are represented by EPIC numbers",
             "risk_factor": 7.2,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -647,7 +647,7 @@
             ]
         },
         "IN GST": {
-            "finding_name": "GSTIN detected",
+            "finding_name": "GSTIN values reveal Indian business tax registrations",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -672,7 +672,7 @@
             ]
         },
         "Date of Birth": {
-            "finding_name": "Date of birth in plain text",
+            "finding_name": "Dates of birth disclose personal age information",
             "risk_factor": 6.5,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -699,7 +699,7 @@
             ]
         },
         "Address": {
-            "finding_name": "Physical address in plain text",
+            "finding_name": "Street addresses reveal physical contact locations",
             "risk_factor": 6.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -726,7 +726,7 @@
             ]
         },
         "Phone Number": {
-            "finding_name": "Phone number in plain text",
+            "finding_name": "Direct phone contacts appear as unmasked numbers",
             "risk_factor": 5.5,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -754,7 +754,7 @@
             ]
         },
         "Email": {
-            "finding_name": "Email address in plain text",
+            "finding_name": "Email addresses provide readable contact details",
             "risk_factor": 5.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -786,7 +786,7 @@
             ]
         },
         "PII.IPAddress": {
-            "finding_name": "IP address in plain text",
+            "finding_name": "Network address data includes IPv4 or IPv6 values",
             "risk_factor": 4.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -817,7 +817,7 @@
             ]
         },
         "PII.PersonName": {
-            "finding_name": "Person name in plain text",
+            "finding_name": "Personal names are readable in the scanned text",
             "risk_factor": 3.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -845,7 +845,7 @@
             ]
         },
         "PII.UserIdentifier": {
-            "finding_name": "User identifier in plain text",
+            "finding_name": "User accounts have visible identifying values",
             "risk_factor": 2.5,
             "category": "PII",
             "sensitivity": "Internal",
@@ -870,7 +870,7 @@
             ]
         },
         "ABA_ROUTING_NUMBER": {
-            "finding_name": "ABA routing number detected",
+            "finding_name": "ABA routing numbers disclose US bank references",
             "risk_factor": 4.5,
             "category": "Financial Data",
             "sensitivity": "Internal",
@@ -895,7 +895,7 @@
             ]
         },
         "US_ITIN": {
-            "finding_name": "US ITIN in plain text",
+            "finding_name": "US individual taxpayer numbers are retained as readable identifiers",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -921,7 +921,7 @@
             ]
         },
         "US_PASSPORT": {
-            "finding_name": "US passport number in plain text",
+            "finding_name": "US passport identifiers appear without redaction",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -946,7 +946,7 @@
             ]
         },
         "US_DRIVER_LICENSE": {
-            "finding_name": "US driver license number in plain text",
+            "finding_name": "US driving credentials include a visible license number",
             "risk_factor": 7.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -972,7 +972,7 @@
             ]
         },
         "US_MBI": {
-            "finding_name": "US Medicare beneficiary identifier in plain text",
+            "finding_name": "Medicare beneficiary numbers disclose US coverage identifiers",
             "risk_factor": 8.0,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -997,7 +997,7 @@
             ]
         },
         "US_NPI": {
-            "finding_name": "US NPI detected",
+            "finding_name": "US healthcare providers are identifiable by NPI values",
             "risk_factor": 5.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
@@ -1021,7 +1021,7 @@
             ]
         },
         "MEDICAL_LICENSE": {
-            "finding_name": "Medical license number detected",
+            "finding_name": "Medical practitioner license references appear in content",
             "risk_factor": 5.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
@@ -1046,7 +1046,7 @@
             ]
         },
         "UK_NHS": {
-            "finding_name": "UK NHS number in plain text",
+            "finding_name": "NHS numbers disclose UK patient identifiers",
             "risk_factor": 8.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -1072,7 +1072,7 @@
             ]
         },
         "UK_PASSPORT": {
-            "finding_name": "UK passport number in plain text",
+            "finding_name": "UK passport data includes an unmasked document number",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1098,7 +1098,7 @@
             ]
         },
         "UK_DRIVING_LICENCE": {
-            "finding_name": "UK driving licence number in plain text",
+            "finding_name": "British driving licence identifiers remain readable",
             "risk_factor": 7.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1124,7 +1124,7 @@
             ]
         },
         "UK_POSTCODE": {
-            "finding_name": "UK postcode detected",
+            "finding_name": "UK postcodes reveal geographic address areas",
             "risk_factor": 3.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -1149,7 +1149,7 @@
             ]
         },
         "UK_VEHICLE_REGISTRATION": {
-            "finding_name": "UK vehicle registration detected",
+            "finding_name": "UK registration marks identify vehicle references",
             "risk_factor": 5.0,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -1174,7 +1174,7 @@
             ]
         },
         "CA_POSTAL_CODE": {
-            "finding_name": "Canadian postal code detected",
+            "finding_name": "Canadian postal codes disclose mailing areas",
             "risk_factor": 3.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -1199,7 +1199,7 @@
             ]
         },
         "DE_ID_CARD": {
-            "finding_name": "German ID card number in plain text",
+            "finding_name": "German identity card numbers appear as complete values",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1225,7 +1225,7 @@
             ]
         },
         "DE_PASSPORT": {
-            "finding_name": "German passport number in plain text",
+            "finding_name": "German passport references can be extracted from the text",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1250,7 +1250,7 @@
             ]
         },
         "DE_SOCIAL_SECURITY": {
-            "finding_name": "German social security number in plain text",
+            "finding_name": "German social insurance numbers include birth date segments",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1276,7 +1276,7 @@
             ]
         },
         "DE_TAX_ID": {
-            "finding_name": "German tax ID in plain text",
+            "finding_name": "Germany's personal tax identifier is present without masking",
             "risk_factor": 8.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1302,7 +1302,7 @@
             ]
         },
         "DE_TAX_NUMBER": {
-            "finding_name": "German tax number in plain text",
+            "finding_name": "German Steuernummer values disclose tax registration numbers",
             "risk_factor": 7.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1327,7 +1327,7 @@
             ]
         },
         "DE_VAT_ID": {
-            "finding_name": "German VAT ID detected",
+            "finding_name": "German VAT registrations are identifiable by business tax IDs",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -1352,7 +1352,7 @@
             ]
         },
         "DE_HANDELSREGISTER": {
-            "finding_name": "German commercial register number detected",
+            "finding_name": "German commercial register numbers identify registered businesses",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -1377,7 +1377,7 @@
             ]
         },
         "DE_HEALTH_INSURANCE": {
-            "finding_name": "German health insurance number in plain text",
+            "finding_name": "German health coverage includes visible insurance identifiers",
             "risk_factor": 8.0,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -1402,7 +1402,7 @@
             ]
         },
         "DE_BSNR": {
-            "finding_name": "German practice number (BSNR) detected",
+            "finding_name": "BSNR values identify German medical practices",
             "risk_factor": 5.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
@@ -1427,7 +1427,7 @@
             ]
         },
         "DE_LANR": {
-            "finding_name": "German physician number (LANR) detected",
+            "finding_name": "German physician references include LANR identifiers",
             "risk_factor": 5.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
@@ -1452,7 +1452,7 @@
             ]
         },
         "DE_FUEHRERSCHEIN": {
-            "finding_name": "German driver license number in plain text",
+            "finding_name": "German driving licence numbers are available as text",
             "risk_factor": 7.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1477,7 +1477,7 @@
             ]
         },
         "DE_KFZ": {
-            "finding_name": "German license plate detected",
+            "finding_name": "German number plates disclose vehicle registration details",
             "risk_factor": 5.0,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -1502,7 +1502,7 @@
             ]
         },
         "DE_PLZ": {
-            "finding_name": "German postal code detected",
+            "finding_name": "German postal routing areas are visible through PLZ codes",
             "risk_factor": 3.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -1527,7 +1527,7 @@
             ]
         },
         "ES_NIF": {
-            "finding_name": "Spanish NIF in plain text",
+            "finding_name": "Spanish NIF values make personal tax identifiers readable",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1553,7 +1553,7 @@
             ]
         },
         "ES_NIE": {
-            "finding_name": "Spanish NIE in plain text",
+            "finding_name": "Spanish foreign resident identifiers appear in full",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1579,7 +1579,7 @@
             ]
         },
         "ES_PASSPORT": {
-            "finding_name": "Spanish passport number in plain text",
+            "finding_name": "Spanish travel document numbers remain directly accessible in content",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1604,7 +1604,7 @@
             ]
         },
         "FI_PERSONAL_IDENTITY_CODE": {
-            "finding_name": "Finnish personal identity code in plain text",
+            "finding_name": "Finnish identity codes make dates of birth readable",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1630,7 +1630,7 @@
             ]
         },
         "PL_PESEL": {
-            "finding_name": "Polish PESEL number in plain text",
+            "finding_name": "Polish PESEL numbers disclose encoded birth dates",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1656,7 +1656,7 @@
             ]
         },
         "SE_PERSONNUMMER": {
-            "finding_name": "Swedish personal number in plain text",
+            "finding_name": "Swedish personnummer values retain personal birth information",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1682,7 +1682,7 @@
             ]
         },
         "SE_ORGANISATIONSNUMMER": {
-            "finding_name": "Swedish organisation number detected",
+            "finding_name": "Swedish organisationsnummer values identify registered entities",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -1707,7 +1707,7 @@
             ]
         },
         "IT_FISCAL_CODE": {
-            "finding_name": "Italian fiscal code in plain text",
+            "finding_name": "Italian Codice Fiscale values disclose taxpayer identities",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1733,7 +1733,7 @@
             ]
         },
         "IT_IDENTITY_CARD": {
-            "finding_name": "Italian identity card number in plain text",
+            "finding_name": "Italian identity documents have visible card numbers",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1759,7 +1759,7 @@
             ]
         },
         "IT_PASSPORT": {
-            "finding_name": "Italian passport number in plain text",
+            "finding_name": "Italian passport numbers are readable within the content",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1784,7 +1784,7 @@
             ]
         },
         "IT_DRIVER_LICENSE": {
-            "finding_name": "Italian driver license number in plain text",
+            "finding_name": "Italian driving licence references appear unmasked",
             "risk_factor": 7.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1809,7 +1809,7 @@
             ]
         },
         "IT_VAT_CODE": {
-            "finding_name": "Italian VAT code detected",
+            "finding_name": "Italian VAT numbers disclose business tax registrations",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -1834,7 +1834,7 @@
             ]
         },
         "KR_RRN": {
-            "finding_name": "Korean resident registration number in plain text",
+            "finding_name": "South Korean resident IDs include readable birth date components",
             "risk_factor": 9.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1859,7 +1859,7 @@
             ]
         },
         "KR_FRN": {
-            "finding_name": "Korean foreign resident number in plain text",
+            "finding_name": "South Korean foreign resident records include readable identifiers",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1884,7 +1884,7 @@
             ]
         },
         "KR_DRIVER_LICENSE": {
-            "finding_name": "Korean driver license number in plain text",
+            "finding_name": "South Korean driving licence numbers can be read directly",
             "risk_factor": 7.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1909,7 +1909,7 @@
             ]
         },
         "KR_PASSPORT": {
-            "finding_name": "Korean passport number in plain text",
+            "finding_name": "South Korean passport identifiers remain visible in the data",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1934,7 +1934,7 @@
             ]
         },
         "KR_BRN": {
-            "finding_name": "Korean business registration number detected",
+            "finding_name": "South Korean business registrations appear as BRN values",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -1959,7 +1959,7 @@
             ]
         },
         "SG_NRIC_FIN": {
-            "finding_name": "Singapore NRIC/FIN in plain text",
+            "finding_name": "Singapore NRIC or FIN values disclose identity registration numbers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -1985,7 +1985,7 @@
             ]
         },
         "SG_UEN": {
-            "finding_name": "Singapore UEN detected",
+            "finding_name": "Singapore UEN values identify registered entities",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -2010,7 +2010,7 @@
             ]
         },
         "AU_TFN": {
-            "finding_name": "Australian tax file number in plain text",
+            "finding_name": "Australian tax file numbers are recoverable as personal identifiers",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2036,7 +2036,7 @@
             ]
         },
         "AU_MEDICARE": {
-            "finding_name": "Australian Medicare number in plain text",
+            "finding_name": "Australian Medicare cards have readable beneficiary references",
             "risk_factor": 8.0,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -2061,7 +2061,7 @@
             ]
         },
         "AU_ABN": {
-            "finding_name": "Australian business number detected",
+            "finding_name": "ABN values disclose Australian business registrations",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -2086,7 +2086,7 @@
             ]
         },
         "AU_ACN": {
-            "finding_name": "Australian company number detected",
+            "finding_name": "Australian companies are identifiable through ACN numbers",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -2111,7 +2111,7 @@
             ]
         },
         "ZA_ID_NUMBER": {
-            "finding_name": "South African ID number in plain text",
+            "finding_name": "South African identity numbers carry readable birth dates",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2136,7 +2136,7 @@
             ]
         },
         "ZA_PASSPORT": {
-            "finding_name": "South African passport number in plain text",
+            "finding_name": "South African passport references are visible as document numbers",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2161,7 +2161,7 @@
             ]
         },
         "ZA_DRIVER_LICENSE": {
-            "finding_name": "South African driver license number in plain text",
+            "finding_name": "South African driving licences have readable identifying numbers",
             "risk_factor": 7.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2186,7 +2186,7 @@
             ]
         },
         "ZA_TRAFFIC_REGISTER_NUMBER": {
-            "finding_name": "South African traffic register number in plain text",
+            "finding_name": "South African traffic register values disclose personal registration IDs",
             "risk_factor": 7.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2211,7 +2211,7 @@
             ]
         },
         "ZA_INCOME_TAX_NUMBER": {
-            "finding_name": "South African income tax number in plain text",
+            "finding_name": "South African income tax numbers identify taxpayer references",
             "risk_factor": 7.8,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2236,7 +2236,7 @@
             ]
         },
         "ZA_VAT_NUMBER": {
-            "finding_name": "South African VAT number detected",
+            "finding_name": "South African VAT registration values are directly visible",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -2261,7 +2261,7 @@
             ]
         },
         "ZA_COMPANY_REGISTRATION": {
-            "finding_name": "South African company registration number detected",
+            "finding_name": "South African company identifiers disclose registration references",
             "risk_factor": 5.5,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -2286,7 +2286,7 @@
             ]
         },
         "ZA_LICENSE_PLATE": {
-            "finding_name": "South African license plate detected",
+            "finding_name": "South African registration plates reveal vehicle identifiers",
             "risk_factor": 5.0,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -2311,7 +2311,7 @@
             ]
         },
         "NG_NIN": {
-            "finding_name": "Nigerian NIN in plain text",
+            "finding_name": "Nigerian NIN values disclose national identity numbers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2336,7 +2336,7 @@
             ]
         },
         "NG_VEHICLE_REGISTRATION": {
-            "finding_name": "Nigerian vehicle registration detected",
+            "finding_name": "Nigerian vehicle registration marks are readable",
             "risk_factor": 5.0,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -2361,7 +2361,7 @@
             ]
         },
         "PH_UMID": {
-            "finding_name": "Philippine UMID in plain text",
+            "finding_name": "Philippine UMID values reveal unified identity numbers",
             "risk_factor": 8.5,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2386,7 +2386,7 @@
             ]
         },
         "PH_TIN": {
-            "finding_name": "Philippine TIN in plain text",
+            "finding_name": "Philippine taxpayer identification numbers appear unmasked",
             "risk_factor": 7.8,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2411,7 +2411,7 @@
             ]
         },
         "PH_PASSPORT": {
-            "finding_name": "Philippine passport number in plain text",
+            "finding_name": "Philippine passport numbers are visible as travel identifiers",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2436,7 +2436,7 @@
             ]
         },
         "TH_TNIN": {
-            "finding_name": "Thai national ID number in plain text",
+            "finding_name": "Thai national identification numbers are available without redaction",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2461,7 +2461,7 @@
             ]
         },
         "TR_NATIONAL_ID": {
-            "finding_name": "Turkish national ID number in plain text",
+            "finding_name": "Turkish national identity numbers remain readable in content",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -2486,7 +2486,7 @@
             ]
         },
         "TR_LICENSE_PLATE": {
-            "finding_name": "Turkish license plate detected",
+            "finding_name": "Turkish licence plates disclose vehicle registration marks",
             "risk_factor": 5.0,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -2511,7 +2511,7 @@
             ]
         },
         "IN_VEHICLE_REGISTRATION": {
-            "finding_name": "Indian vehicle registration detected",
+            "finding_name": "Indian vehicle identities include readable registration numbers",
             "risk_factor": 5.0,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -2536,7 +2536,7 @@
             ]
         },
         "CRYPTO": {
-            "finding_name": "Cryptocurrency wallet address detected",
+            "finding_name": "Cryptocurrency addresses provide wallet references",
             "risk_factor": 6.5,
             "category": "Financial Data",
             "sensitivity": "Confidential",
@@ -2563,7 +2563,7 @@
             ]
         },
         "MAC_ADDRESS": {
-            "finding_name": "MAC address detected",
+            "finding_name": "MAC addresses disclose network interface identifiers",
             "risk_factor": 4.0,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -2589,7 +2589,7 @@
             ]
         },
         "URL": {
-            "finding_name": "URL detected",
+            "finding_name": "Web URLs reveal referenced destinations",
             "risk_factor": 3.0,
             "category": "PII",
             "sensitivity": "Internal",
@@ -2613,7 +2613,7 @@
             ]
         },
         "UUID": {
-            "finding_name": "UUID detected",
+            "finding_name": "Technical references include recognizable UUID values",
             "risk_factor": 2.0,
             "category": "Technical Identifier",
             "sensitivity": "Internal",
@@ -2634,7 +2634,7 @@
             ]
         },
         "GitHub Token": {
-            "finding_name": "GitHub personal access, OAuth, user-to-server or refresh token in plain text",
+            "finding_name": "A GitHub access token is available as literal text",
             "risk_factor": 9.3,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2661,7 +2661,7 @@
             ]
         },
         "GitLab Token": {
-            "finding_name": "GitLab personal/project/runner/deploy token in plain text",
+            "finding_name": "GitLab authentication material includes a recoverable token",
             "risk_factor": 9.3,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2688,7 +2688,7 @@
             ]
         },
         "Slack Token": {
-            "finding_name": "Slack bot, user, app-level or legacy token in plain text",
+            "finding_name": "Slack authentication tokens appear without masking",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2715,7 +2715,7 @@
             ]
         },
         "Slack Webhook": {
-            "finding_name": "Slack incoming webhook URL in plain text",
+            "finding_name": "A Slack webhook URL contains its secret path component",
             "risk_factor": 8.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2742,7 +2742,7 @@
             ]
         },
         "Google API Key": {
-            "finding_name": "Google Cloud / Maps / Firebase API key in plain text",
+            "finding_name": "A Google API credential is visible in full",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2769,7 +2769,7 @@
             ]
         },
         "Google OAuth Token": {
-            "finding_name": "Google OAuth 2.0 access token in plain text",
+            "finding_name": "Google OAuth access material can be copied from the content",
             "risk_factor": 9.2,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2796,7 +2796,7 @@
             ]
         },
         "OpenAI API Key": {
-            "finding_name": "OpenAI API key (user, project or service account) in plain text",
+            "finding_name": "An OpenAI API key appears as an explicit credential",
             "risk_factor": 9.3,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2823,7 +2823,7 @@
             ]
         },
         "Anthropic API Key": {
-            "finding_name": "Anthropic API key in plain text",
+            "finding_name": "Anthropic API authentication includes a readable key",
             "risk_factor": 9.3,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2850,7 +2850,7 @@
             ]
         },
         "Stripe Key": {
-            "finding_name": "Stripe secret or restricted API key in plain text",
+            "finding_name": "A Stripe secret or restricted key remains unmasked",
             "risk_factor": 9.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2877,7 +2877,7 @@
             ]
         },
         "SendGrid Key": {
-            "finding_name": "SendGrid API key in plain text",
+            "finding_name": "Readable email API credentials match a SendGrid key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2904,7 +2904,7 @@
             ]
         },
         "Twilio Key": {
-            "finding_name": "Twilio API key SID in plain text",
+            "finding_name": "A Twilio API key is referenced by its visible SID",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2931,7 +2931,7 @@
             ]
         },
         "Mailchimp Key": {
-            "finding_name": "Mailchimp API key in plain text",
+            "finding_name": "A Mailchimp API key includes its regional suffix",
             "risk_factor": 8.8,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2958,7 +2958,7 @@
             ]
         },
         "Mailgun Key": {
-            "finding_name": "Mailgun API key in plain text",
+            "finding_name": "Mailgun email authorization material is recoverable",
             "risk_factor": 8.8,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -2985,7 +2985,7 @@
             ]
         },
         "HashiCorp Vault Token": {
-            "finding_name": "HashiCorp Vault service or batch token in plain text",
+            "finding_name": "A HashiCorp Vault credential appears as a readable token",
             "risk_factor": 9.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3012,7 +3012,7 @@
             ]
         },
         "Docker Hub Token": {
-            "finding_name": "Docker Hub personal access token in plain text",
+            "finding_name": "Docker Hub registry authentication has a visible access token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3039,7 +3039,7 @@
             ]
         },
         "npm Token": {
-            "finding_name": "npm access token in plain text",
+            "finding_name": "An npm registry token can be extracted from the text",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3066,7 +3066,7 @@
             ]
         },
         "PyPI Token": {
-            "finding_name": "PyPI API token in plain text",
+            "finding_name": "PyPI package authentication includes an unmasked API token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3093,7 +3093,7 @@
             ]
         },
         "Azure Storage Key": {
-            "finding_name": "Azure Storage account key in plain text",
+            "finding_name": "An Azure Storage connection value includes the account key",
             "risk_factor": 9.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3120,7 +3120,7 @@
             ]
         },
         "Azure SAS Token": {
-            "finding_name": "Azure shared access signature token in plain text",
+            "finding_name": "Azure SAS parameters contain a readable access signature",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3147,7 +3147,7 @@
             ]
         },
         "Shopify Token": {
-            "finding_name": "Shopify access token or shared secret in plain text",
+            "finding_name": "Shopify access material matches a token or shared secret",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3174,7 +3174,7 @@
             ]
         },
         "Square Token": {
-            "finding_name": "Square access token or client secret in plain text",
+            "finding_name": "Square authorization data includes a token or client secret",
             "risk_factor": 9.2,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3201,7 +3201,7 @@
             ]
         },
         "Telegram Bot Token": {
-            "finding_name": "Telegram bot token in plain text",
+            "finding_name": "Telegram bot identity and authentication secret appear together",
             "risk_factor": 8.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3228,7 +3228,7 @@
             ]
         },
         "Databricks Token": {
-            "finding_name": "Databricks personal access token in plain text",
+            "finding_name": "A Databricks personal access token remains directly readable",
             "risk_factor": 9.2,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3255,7 +3255,7 @@
             ]
         },
         "Atlassian Token": {
-            "finding_name": "Atlassian (Jira/Confluence) API token in plain text",
+            "finding_name": "An Atlassian API token appears in complete form",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3282,7 +3282,7 @@
             ]
         },
         "Grafana Token": {
-            "finding_name": "Grafana cloud or service account token in plain text",
+            "finding_name": "Grafana access credentials can be recovered as text",
             "risk_factor": 8.8,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3309,7 +3309,7 @@
             ]
         },
         "Postman Key": {
-            "finding_name": "Postman API key in plain text",
+            "finding_name": "A Postman API credential has an unmasked key value",
             "risk_factor": 8.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3336,7 +3336,7 @@
             ]
         },
         "Hugging Face Token": {
-            "finding_name": "Hugging Face user access token in plain text",
+            "finding_name": "A Hugging Face access token is directly recoverable",
             "risk_factor": 8.8,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3363,7 +3363,7 @@
             ]
         },
         "Age Secret Key": {
-            "finding_name": "age encryption secret key in plain text",
+            "finding_name": "An age decryption identity appears as a secret key",
             "risk_factor": 9.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3390,7 +3390,7 @@
             ]
         },
         "Discord Bot Token": {
-            "finding_name": "Discord bot token in plain text",
+            "finding_name": "Discord bot authentication material is directly available",
             "risk_factor": 8.8,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3417,7 +3417,7 @@
             ]
         },
         "Heroku API Key": {
-            "finding_name": "Heroku API key in plain text",
+            "finding_name": "Heroku credential context includes a readable API key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3444,7 +3444,7 @@
             ]
         },
         "Credentials in URL": {
-            "finding_name": "Credentials embedded in a connection URL",
+            "finding_name": "A URL carries both a login name and password",
             "risk_factor": 9.5,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3471,7 +3471,7 @@
             ]
         },
         "Basic Auth Credentials": {
-            "finding_name": "HTTP Basic authentication credentials in plain text",
+            "finding_name": "HTTP Basic login details can be decoded from Base64",
             "risk_factor": 9.3,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3498,7 +3498,7 @@
             ]
         },
         "Encrypted Secret": {
-            "finding_name": "Application-encrypted secret (OpenSSL Salted__ blob)",
+            "finding_name": "An encrypted value matches the OpenSSL salted format",
             "risk_factor": 6.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Confidential",
@@ -3525,7 +3525,7 @@
             ]
         },
         "US_HEALTH_INSURANCE_MEMBER_ID": {
-            "finding_name": "US health insurance member ID in plain text",
+            "finding_name": "US health insurance member numbers disclose coverage references",
             "risk_factor": 8.0,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -3551,7 +3551,7 @@
             ]
         },
         "US_PRIOR_AUTHORIZATION_NUMBER": {
-            "finding_name": "US healthcare prior authorization number in plain text",
+            "finding_name": "US prior authorization numbers disclose treatment decision references",
             "risk_factor": 7.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -3577,7 +3577,7 @@
             ]
         },
         "US_CLAIM_NUMBER": {
-            "finding_name": "US healthcare claim number in plain text",
+            "finding_name": "US health insurance claims have visible reference numbers",
             "risk_factor": 7.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -3603,7 +3603,7 @@
             ]
         },
         "US_PRESCRIPTION_NUMBER": {
-            "finding_name": "US prescription number in plain text",
+            "finding_name": "US prescription identifiers reveal medication order references",
             "risk_factor": 7.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -3629,7 +3629,7 @@
             ]
         },
         "US_REFERRAL_NUMBER": {
-            "finding_name": "US healthcare referral number in plain text",
+            "finding_name": "US referral numbers disclose healthcare referral references",
             "risk_factor": 7.0,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -3655,7 +3655,7 @@
             ]
         },
         "US_PROVIDER_TAX_ID": {
-            "finding_name": "US healthcare provider tax ID (EIN) detected",
+            "finding_name": "US healthcare provider tax identifiers appear as EIN values",
             "risk_factor": 4.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
@@ -3681,7 +3681,7 @@
             ]
         },
         "ZA_MOBILE_NUMBER": {
-            "finding_name": "South African mobile number in plain text",
+            "finding_name": "South African mobile numbers provide direct contact references",
             "risk_factor": 5.5,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -3706,7 +3706,7 @@
             ]
         },
         "ZA_TELEPHONE_NUMBER": {
-            "finding_name": "South African telephone number in plain text",
+            "finding_name": "South African telephone contacts are readable without redaction",
             "risk_factor": 5.5,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -3731,7 +3731,7 @@
             ]
         },
         "PH_MOBILE_NUMBER": {
-            "finding_name": "Philippine mobile number in plain text",
+            "finding_name": "Philippine mobile contact details include unmasked phone numbers",
             "risk_factor": 5.5,
             "category": "PII",
             "sensitivity": "Confidential",
@@ -3756,7 +3756,7 @@
             ]
         },
         "DigitalOcean Token": {
-            "finding_name": "DigitalOcean API token in plain text",
+            "finding_name": "DigitalOcean access or refresh token material is visible",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3784,7 +3784,7 @@
             ]
         },
         "Google OAuth Client Secret": {
-            "finding_name": "Google OAuth client secret in plain text",
+            "finding_name": "A Google OAuth client secret can be read directly",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3812,7 +3812,7 @@
             ]
         },
         "Notion Token": {
-            "finding_name": "Notion integration token in plain text",
+            "finding_name": "Notion integration authentication includes a visible credential",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3840,7 +3840,7 @@
             ]
         },
         "Linear API Key": {
-            "finding_name": "Linear API key in plain text",
+            "finding_name": "A Linear API key appears without value masking",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3868,7 +3868,7 @@
             ]
         },
         "Figma Token": {
-            "finding_name": "Figma personal access token in plain text",
+            "finding_name": "A Figma access credential is retrievable from the content",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3896,7 +3896,7 @@
             ]
         },
         "New Relic Key": {
-            "finding_name": "New Relic user API key in plain text",
+            "finding_name": "New Relic API authentication material remains readable",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3924,7 +3924,7 @@
             ]
         },
         "Sentry Token": {
-            "finding_name": "Sentry auth token in plain text",
+            "finding_name": "A Sentry authentication token is available in the scan",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3952,7 +3952,7 @@
             ]
         },
         "PlanetScale Token": {
-            "finding_name": "PlanetScale token in plain text",
+            "finding_name": "PlanetScale credentials include a token or database password",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -3980,7 +3980,7 @@
             ]
         },
         "Supabase Key": {
-            "finding_name": "Supabase personal access token in plain text",
+            "finding_name": "A Supabase personal access token appears as a literal value",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4008,7 +4008,7 @@
             ]
         },
         "Doppler Token": {
-            "finding_name": "Doppler token in plain text",
+            "finding_name": "A Doppler token reveals a credential for managing secrets",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4036,7 +4036,7 @@
             ]
         },
         "Airtable Token": {
-            "finding_name": "Airtable personal access token in plain text",
+            "finding_name": "An Airtable personal access credential is present without masking",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4064,7 +4064,7 @@
             ]
         },
         "Dropbox Token": {
-            "finding_name": "Dropbox access token in plain text",
+            "finding_name": "A Dropbox access token can be recovered from the data",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4092,7 +4092,7 @@
             ]
         },
         "Facebook Access Token": {
-            "finding_name": "Facebook Graph API access token in plain text",
+            "finding_name": "Facebook API access material is readable as a token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4120,7 +4120,7 @@
             ]
         },
         "Netlify Token": {
-            "finding_name": "Netlify personal access token in plain text",
+            "finding_name": "Netlify authentication includes an explicit access credential",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4148,7 +4148,7 @@
             ]
         },
         "Pulumi Token": {
-            "finding_name": "Pulumi access token in plain text",
+            "finding_name": "A Pulumi access token remains visible in full",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4176,7 +4176,7 @@
             ]
         },
         "Twitter Bearer Token": {
-            "finding_name": "Twitter / X API bearer token in plain text",
+            "finding_name": "An X (Twitter) bearer credential is retrievable as text",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4204,7 +4204,7 @@
             ]
         },
         "AWS MWS Token": {
-            "finding_name": "AWS MWS Token in plain text",
+            "finding_name": "Amazon Marketplace authorization includes an MWS token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4232,7 +4232,7 @@
             ]
         },
         "Alibaba Access Key": {
-            "finding_name": "Alibaba Access Key in plain text",
+            "finding_name": "Alibaba Cloud key metadata reveals an access key identifier",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4260,7 +4260,7 @@
             ]
         },
         "JFrog Token": {
-            "finding_name": "JFrog Token in plain text",
+            "finding_name": "JFrog access material contains a token or API key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4288,7 +4288,7 @@
             ]
         },
         "CircleCI Token": {
-            "finding_name": "CircleCI Token in plain text",
+            "finding_name": "A complete CircleCI API authentication token is visible",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4316,7 +4316,7 @@
             ]
         },
         "Buildkite Token": {
-            "finding_name": "Buildkite Token in plain text",
+            "finding_name": "Buildkite API authentication has a readable access value",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4344,7 +4344,7 @@
             ]
         },
         "Cloudflare Origin CA Key": {
-            "finding_name": "Cloudflare Origin CA Key in plain text",
+            "finding_name": "A Cloudflare Origin CA credential appears as an API key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4372,7 +4372,7 @@
             ]
         },
         "Dynatrace Token": {
-            "finding_name": "Dynatrace Token in plain text",
+            "finding_name": "A Dynatrace API token includes a visible secret component",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4400,7 +4400,7 @@
             ]
         },
         "Elastic Cloud Key": {
-            "finding_name": "Elastic Cloud Key in plain text",
+            "finding_name": "Elastic Cloud API credentials are accessible within the content",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4428,7 +4428,7 @@
             ]
         },
         "GCP Service Account Key": {
-            "finding_name": "GCP Service Account Key in plain text",
+            "finding_name": "Google Cloud service account metadata includes a private key ID",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4456,7 +4456,7 @@
             ]
         },
         "Groq API Key": {
-            "finding_name": "Groq API Key in plain text",
+            "finding_name": "Groq API authentication includes a recoverable secret value",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4484,7 +4484,7 @@
             ]
         },
         "Replicate Token": {
-            "finding_name": "Replicate Token in plain text",
+            "finding_name": "A Replicate API token is present in readable content",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4512,7 +4512,7 @@
             ]
         },
         "Perplexity API Key": {
-            "finding_name": "Perplexity API Key in plain text",
+            "finding_name": "A Perplexity API key appears as an unmasked credential",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4540,7 +4540,7 @@
             ]
         },
         "xAI API Key": {
-            "finding_name": "xAI API Key in plain text",
+            "finding_name": "xAI API access material has a directly visible key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4568,7 +4568,7 @@
             ]
         },
         "Pinecone API Key": {
-            "finding_name": "Pinecone API Key in plain text",
+            "finding_name": "A Pinecone API credential is available without redaction",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4596,7 +4596,7 @@
             ]
         },
         "Firebase Cloud Messaging Key": {
-            "finding_name": "Firebase Cloud Messaging Key in plain text",
+            "finding_name": "Firebase Cloud Messaging includes a readable server key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4624,7 +4624,7 @@
             ]
         },
         "1Password Service Account Token": {
-            "finding_name": "1Password Service Account Token in plain text",
+            "finding_name": "A 1Password service account token appears in text",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4652,7 +4652,7 @@
             ]
         },
         "Infisical Token": {
-            "finding_name": "Infisical Token in plain text",
+            "finding_name": "All components of an Infisical service token are visible",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4680,7 +4680,7 @@
             ]
         },
         "Terraform Cloud Token": {
-            "finding_name": "Terraform Cloud Token in plain text",
+            "finding_name": "Terraform Cloud API authentication has a readable token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4708,7 +4708,7 @@
             ]
         },
         "Prefect API Key": {
-            "finding_name": "Prefect API Key in plain text",
+            "finding_name": "A Prefect API credential can be extracted from the content",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4736,7 +4736,7 @@
             ]
         },
         "RubyGems API Key": {
-            "finding_name": "RubyGems API Key in plain text",
+            "finding_name": "RubyGems package authentication includes a readable API key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4764,7 +4764,7 @@
             ]
         },
         "NuGet API Key": {
-            "finding_name": "NuGet API Key in plain text",
+            "finding_name": "A NuGet package access key is visible in full",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4792,7 +4792,7 @@
             ]
         },
         "Cargo Registry Token": {
-            "finding_name": "Cargo Registry Token in plain text",
+            "finding_name": "A Cargo token reveals a possible Rust registry credential",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4820,7 +4820,7 @@
             ]
         },
         "Scalingo Token": {
-            "finding_name": "Scalingo Token in plain text",
+            "finding_name": "Scalingo API access material appears without masking",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4848,7 +4848,7 @@
             ]
         },
         "Fly.io Token": {
-            "finding_name": "Fly.io Token in plain text",
+            "finding_name": "Fly.io authentication includes an extractable access token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4876,7 +4876,7 @@
             ]
         },
         "Render Token": {
-            "finding_name": "Render Token in plain text",
+            "finding_name": "A Render API credential is represented by a readable key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4904,7 +4904,7 @@
             ]
         },
         "Contentful Token": {
-            "finding_name": "Contentful Token in plain text",
+            "finding_name": "A Contentful access token is directly retrievable",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4932,7 +4932,7 @@
             ]
         },
         "Shippo Token": {
-            "finding_name": "Shippo Token in plain text",
+            "finding_name": "Shippo API authentication has an unmasked token value",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4960,7 +4960,7 @@
             ]
         },
         "EasyPost Key": {
-            "finding_name": "EasyPost Key in plain text",
+            "finding_name": "EasyPost access material includes a test or production API key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -4988,7 +4988,7 @@
             ]
         },
         "Flutterwave Key": {
-            "finding_name": "Flutterwave Key in plain text",
+            "finding_name": "Flutterwave credential data contains a public or secret API key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5016,7 +5016,7 @@
             ]
         },
         "Razorpay Key": {
-            "finding_name": "Razorpay Key in plain text",
+            "finding_name": "A Razorpay API key identifier is visible with its environment prefix",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5044,7 +5044,7 @@
             ]
         },
         "Braintree Access Token": {
-            "finding_name": "Braintree Access Token in plain text",
+            "finding_name": "A Braintree production access token appears in readable content",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5072,7 +5072,7 @@
             ]
         },
         "Plaid Access Token": {
-            "finding_name": "Plaid Access Token in plain text",
+            "finding_name": "A Plaid access token discloses its target environment",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5100,7 +5100,7 @@
             ]
         },
         "HubSpot Token": {
-            "finding_name": "HubSpot Token in plain text",
+            "finding_name": "HubSpot access material includes an unmasked token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5128,7 +5128,7 @@
             ]
         },
         "Typeform Token": {
-            "finding_name": "Typeform Token in plain text",
+            "finding_name": "A Typeform access credential is available in the text",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5156,7 +5156,7 @@
             ]
         },
         "ClickUp Token": {
-            "finding_name": "ClickUp Token in plain text",
+            "finding_name": "A ClickUp API token contains visible authentication material",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5184,7 +5184,7 @@
             ]
         },
         "Asana Token": {
-            "finding_name": "Asana Token in plain text",
+            "finding_name": "Asana API authentication includes a readable access credential",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5212,7 +5212,7 @@
             ]
         },
         "Sourcegraph Token": {
-            "finding_name": "Sourcegraph Token in plain text",
+            "finding_name": "A Sourcegraph access token can be retrieved from content",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5240,7 +5240,7 @@
             ]
         },
         "SonarQube Token": {
-            "finding_name": "SonarQube Token in plain text",
+            "finding_name": "SonarQube authentication material appears in token form",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5268,7 +5268,7 @@
             ]
         },
         "ReadMe Token": {
-            "finding_name": "ReadMe Token in plain text",
+            "finding_name": "A ReadMe API credential has a directly readable value",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5296,7 +5296,7 @@
             ]
         },
         "Brevo API Key": {
-            "finding_name": "Brevo API Key in plain text",
+            "finding_name": "Brevo API authentication includes an explicit key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5324,7 +5324,7 @@
             ]
         },
         "Klaviyo Key": {
-            "finding_name": "Klaviyo Key in plain text",
+            "finding_name": "A Klaviyo private API key is present without redaction",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5352,7 +5352,7 @@
             ]
         },
         "Microsoft Teams Webhook": {
-            "finding_name": "Microsoft Teams Webhook in plain text",
+            "finding_name": "A Microsoft Teams incoming webhook reveals its secret URL path",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5380,7 +5380,7 @@
             ]
         },
         "Discord Webhook": {
-            "finding_name": "Discord Webhook in plain text",
+            "finding_name": "A Discord webhook URL includes both its ID and token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5408,7 +5408,7 @@
             ]
         },
         "DeepL API Key": {
-            "finding_name": "DeepL API Key in plain text",
+            "finding_name": "A DeepL API credential appears as a recoverable key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5436,7 +5436,7 @@
             ]
         },
         "Neon Database Password": {
-            "finding_name": "Neon Database Password in plain text",
+            "finding_name": "A Neon database password is visible as a credential value",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5464,7 +5464,7 @@
             ]
         },
         "Laravel App Key": {
-            "finding_name": "Laravel App Key in plain text",
+            "finding_name": "Laravel APP_KEY contains a recoverable application encryption key",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5492,7 +5492,7 @@
             ]
         },
         "PuTTY Private Key": {
-            "finding_name": "PuTTY Private Key in plain text",
+            "finding_name": "A PuTTY key header indicates possible private key content",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5520,7 +5520,7 @@
             ]
         },
         "Netrc Credentials": {
-            "finding_name": "Netrc Credentials in plain text",
+            "finding_name": "Netrc content pairs a machine login with its password",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5548,7 +5548,7 @@
             ]
         },
         "Slack Config Token": {
-            "finding_name": "Slack Config Token in plain text",
+            "finding_name": "Slack configuration access material is available as a token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5576,7 +5576,7 @@
             ]
         },
         "Yandex Token": {
-            "finding_name": "Yandex Token in plain text",
+            "finding_name": "Yandex Cloud authentication matches an API key or access token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5604,7 +5604,7 @@
             ]
         },
         "Adafruit IO Key": {
-            "finding_name": "Adafruit IO Key in plain text",
+            "finding_name": "An Adafruit IO API key appears as a readable value",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5632,7 +5632,7 @@
             ]
         },
         "Frame.io Token": {
-            "finding_name": "Frame.io Token in plain text",
+            "finding_name": "A Frame.io access credential is present as an unmasked token",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5660,7 +5660,7 @@
             ]
         },
         "Zapier Webhook": {
-            "finding_name": "Zapier Webhook in plain text",
+            "finding_name": "A Zapier webhook discloses its trigger URL",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5688,7 +5688,7 @@
             ]
         },
         "Bitcoin Private Key": {
-            "finding_name": "Bitcoin Private Key in plain text",
+            "finding_name": "A Bitcoin private key appears in wallet import format",
             "risk_factor": 9.0,
             "category": "Credentials and Secrets",
             "sensitivity": "Restricted",
@@ -5716,7 +5716,7 @@
             ]
         },
         "FR_NIR": {
-            "finding_name": "French social security number (NIR) in plain text",
+            "finding_name": "French NIR values disclose social security registration references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5743,7 +5743,7 @@
             ]
         },
         "FR_PASSPORT": {
-            "finding_name": "French passport number in plain text",
+            "finding_name": "French passport numbers can be read as travel document identifiers",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5770,7 +5770,7 @@
             ]
         },
         "NL_BSN": {
-            "finding_name": "Dutch citizen service number (BSN) in plain text",
+            "finding_name": "Dutch BSN values reveal citizen service identifiers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5797,7 +5797,7 @@
             ]
         },
         "BE_NATIONAL_NUMBER": {
-            "finding_name": "Belgian national register number in plain text",
+            "finding_name": "Belgian national register numbers include encoded birth dates",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5824,7 +5824,7 @@
             ]
         },
         "CH_AHV": {
-            "finding_name": "Swiss AHV/AVS number in plain text",
+            "finding_name": "Swiss AHV/AVS references disclose individual insurance numbers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5850,7 +5850,7 @@
             ]
         },
         "AT_SVNR": {
-            "finding_name": "Austrian social insurance number (SVNR) in plain text",
+            "finding_name": "Austrian social insurance identifiers retain their date components",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5877,7 +5877,7 @@
             ]
         },
         "IE_PPS": {
-            "finding_name": "Irish PPS number in plain text",
+            "finding_name": "Irish PPS numbers disclose personal public service references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5904,7 +5904,7 @@
             ]
         },
         "PT_NIF": {
-            "finding_name": "Portuguese tax identification number (NIF) in plain text",
+            "finding_name": "Portuguese NIF values identify readable tax registration numbers",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5931,7 +5931,7 @@
             ]
         },
         "LU_NATIONAL_ID": {
-            "finding_name": "Luxembourg national identification number in plain text",
+            "finding_name": "Luxembourg matricule numbers contain a readable birth date",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5958,7 +5958,7 @@
             ]
         },
         "DK_CPR": {
-            "finding_name": "Danish CPR number in plain text",
+            "finding_name": "Danish CPR identifiers reveal birth date components",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -5985,7 +5985,7 @@
             ]
         },
         "NO_FODSELSNUMMER": {
-            "finding_name": "Norwegian national identity number (fødselsnummer) in plain text",
+            "finding_name": "Norwegian identity references include readable national numbers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6012,7 +6012,7 @@
             ]
         },
         "IS_KENNITALA": {
-            "finding_name": "Icelandic kennitala in plain text",
+            "finding_name": "Icelandic kennitala values disclose national registration identifiers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6039,7 +6039,7 @@
             ]
         },
         "CZ_RODNE_CISLO": {
-            "finding_name": "Czech birth number (rodné číslo) in plain text",
+            "finding_name": "Czech birth numbers make encoded dates of birth recoverable",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6066,7 +6066,7 @@
             ]
         },
         "SK_RODNE_CISLO": {
-            "finding_name": "Slovak birth number (rodné číslo) in plain text",
+            "finding_name": "Slovak rodne cislo values reveal personal birth number references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6093,7 +6093,7 @@
             ]
         },
         "HU_TAJ": {
-            "finding_name": "Hungarian social insurance number (TAJ) in plain text",
+            "finding_name": "Hungarian TAJ numbers identify social insurance references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6120,7 +6120,7 @@
             ]
         },
         "RO_CNP": {
-            "finding_name": "Romanian personal numeric code (CNP) in plain text",
+            "finding_name": "Romanian CNP identifiers contain a decodable date of birth",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6147,7 +6147,7 @@
             ]
         },
         "GR_AMKA": {
-            "finding_name": "Greek social security number (AMKA) in plain text",
+            "finding_name": "Greek AMKA values combine social security IDs with birth dates",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6174,7 +6174,7 @@
             ]
         },
         "BG_EGN": {
-            "finding_name": "Bulgarian unified civil number (EGN) in plain text",
+            "finding_name": "Bulgarian EGN numbers preserve encoded birth information",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6201,7 +6201,7 @@
             ]
         },
         "HR_OIB": {
-            "finding_name": "Croatian personal identification number (OIB) in plain text",
+            "finding_name": "Croatian OIB values disclose personal identification references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6228,7 +6228,7 @@
             ]
         },
         "RS_JMBG": {
-            "finding_name": "Serbian unique master citizen number (JMBG) in plain text",
+            "finding_name": "Serbian JMBG identifiers include personal birth date details",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6254,7 +6254,7 @@
             ]
         },
         "SI_EMSO": {
-            "finding_name": "Slovenian unique master citizen number (EMŠO) in plain text",
+            "finding_name": "Slovenian EMSO numbers reveal citizen registration references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6281,7 +6281,7 @@
             ]
         },
         "LT_ASMENS_KODAS": {
-            "finding_name": "Lithuanian personal code in plain text",
+            "finding_name": "Lithuanian personal codes contain readable birth date segments",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6308,7 +6308,7 @@
             ]
         },
         "EE_ISIKUKOOD": {
-            "finding_name": "Estonian personal identification code in plain text",
+            "finding_name": "Estonian isikukood values combine identity and birth information",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6335,7 +6335,7 @@
             ]
         },
         "LV_PERSONAS_KODS": {
-            "finding_name": "Latvian personal code in plain text",
+            "finding_name": "Latvian personas kods identifiers appear as unmasked values",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6362,7 +6362,7 @@
             ]
         },
         "RU_INN": {
-            "finding_name": "Russian taxpayer number (INN) in plain text",
+            "finding_name": "Russian INN numbers make individual tax identifiers visible",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6388,7 +6388,7 @@
             ]
         },
         "RU_SNILS": {
-            "finding_name": "Russian pension insurance number (SNILS) in plain text",
+            "finding_name": "Russian SNILS values disclose pension insurance references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6414,7 +6414,7 @@
             ]
         },
         "UA_RNTRC": {
-            "finding_name": "Ukrainian taxpayer registration number (RNTRC) in plain text",
+            "finding_name": "Ukrainian RNTRC identifiers reveal taxpayer registration numbers",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6440,7 +6440,7 @@
             ]
         },
         "ES_NUSS": {
-            "finding_name": "Spanish social security number (NUSS) in plain text",
+            "finding_name": "Spanish NUSS numbers include social security registration details",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6467,7 +6467,7 @@
             ]
         },
         "GB_UTR": {
-            "finding_name": "UK unique taxpayer reference (UTR) in plain text",
+            "finding_name": "UK taxpayer references are available as complete UTR values",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6494,7 +6494,7 @@
             ]
         },
         "GB_SORT_CODE": {
-            "finding_name": "UK bank sort code in plain text",
+            "finding_name": "UK sort codes reveal bank branch routing information",
             "risk_factor": 6.5,
             "category": "Financial Data",
             "sensitivity": "Confidential",
@@ -6521,7 +6521,7 @@
             ]
         },
         "BR_CPF": {
-            "finding_name": "Brazilian CPF in plain text",
+            "finding_name": "Brazilian CPF numbers expose personal tax references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6547,7 +6547,7 @@
             ]
         },
         "BR_CNPJ": {
-            "finding_name": "Brazilian CNPJ in plain text",
+            "finding_name": "Brazilian CNPJ values identify business tax registrations",
             "risk_factor": 5.0,
             "category": "Regional Compliance",
             "sensitivity": "Internal",
@@ -6573,7 +6573,7 @@
             ]
         },
         "MX_CURP": {
-            "finding_name": "Mexican CURP in plain text",
+            "finding_name": "Mexican CURP identifiers contain population registration details",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6599,7 +6599,7 @@
             ]
         },
         "MX_RFC": {
-            "finding_name": "Mexican RFC in plain text",
+            "finding_name": "Mexican RFC values disclose individual or business tax IDs",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6625,7 +6625,7 @@
             ]
         },
         "AR_CUIT": {
-            "finding_name": "Argentine CUIT/CUIL in plain text",
+            "finding_name": "Argentine CUIT or CUIL numbers reveal tax or employment identifiers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6651,7 +6651,7 @@
             ]
         },
         "AR_DNI": {
-            "finding_name": "Argentine DNI in plain text",
+            "finding_name": "Argentine DNI values are visible as national identity references",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6677,7 +6677,7 @@
             ]
         },
         "CL_RUT": {
-            "finding_name": "Chilean RUT in plain text",
+            "finding_name": "Chilean RUT/RUN numbers disclose identity or tax registration values",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6704,7 +6704,7 @@
             ]
         },
         "CA_OHIP": {
-            "finding_name": "Ontario health card number in plain text",
+            "finding_name": "Ontario health card numbers reveal OHIP patient references",
             "risk_factor": 8.2,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -6731,7 +6731,7 @@
             ]
         },
         "US_EIN": {
-            "finding_name": "US employer identification number (EIN) in plain text",
+            "finding_name": "US EIN values disclose employer tax identification numbers",
             "risk_factor": 6.5,
             "category": "Regional Compliance",
             "sensitivity": "Confidential",
@@ -6758,7 +6758,7 @@
             ]
         },
         "US_ALIEN_REGISTRATION": {
-            "finding_name": "US alien registration number in plain text",
+            "finding_name": "US A-Numbers reveal immigration registration references",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6785,7 +6785,7 @@
             ]
         },
         "JP_MY_NUMBER": {
-            "finding_name": "Japanese My Number in plain text",
+            "finding_name": "Japan's My Number identifiers are visible without redaction",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6812,7 +6812,7 @@
             ]
         },
         "JP_PASSPORT": {
-            "finding_name": "Japanese passport number in plain text",
+            "finding_name": "Japanese passport references include an unmasked document code",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6839,7 +6839,7 @@
             ]
         },
         "CN_RESIDENT_ID": {
-            "finding_name": "Chinese resident identity card number in plain text",
+            "finding_name": "Chinese resident IDs reveal embedded region and birth details",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6865,7 +6865,7 @@
             ]
         },
         "HK_HKID": {
-            "finding_name": "Hong Kong identity card number (HKID) in plain text",
+            "finding_name": "Hong Kong identity card references appear as full HKID values",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6891,7 +6891,7 @@
             ]
         },
         "TW_NATIONAL_ID": {
-            "finding_name": "Taiwanese national ID number in plain text",
+            "finding_name": "Taiwanese national identity numbers remain available as text",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6917,7 +6917,7 @@
             ]
         },
         "ID_NIK": {
-            "finding_name": "Indonesian NIK in plain text",
+            "finding_name": "Indonesian NIK values reveal regional and birth information",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6943,7 +6943,7 @@
             ]
         },
         "MY_MYKAD": {
-            "finding_name": "Malaysian MyKad number in plain text",
+            "finding_name": "Malaysian MyKad numbers include birth dates and birthplace codes",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6969,7 +6969,7 @@
             ]
         },
         "VN_CCCD": {
-            "finding_name": "Vietnamese citizen identity number (CCCD) in plain text",
+            "finding_name": "Vietnamese CCCD values carry province and birth year information",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -6995,7 +6995,7 @@
             ]
         },
         "PK_CNIC": {
-            "finding_name": "Pakistani CNIC in plain text",
+            "finding_name": "Pakistani CNIC numbers disclose national card identifiers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7022,7 +7022,7 @@
             ]
         },
         "LK_NIC": {
-            "finding_name": "Sri Lankan NIC in plain text",
+            "finding_name": "Sri Lankan NIC values include encoded birth year and day information",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7048,7 +7048,7 @@
             ]
         },
         "NZ_IRD": {
-            "finding_name": "New Zealand IRD number in plain text",
+            "finding_name": "New Zealand IRD values reveal inland revenue identifiers",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7075,7 +7075,7 @@
             ]
         },
         "NZ_NHI": {
-            "finding_name": "New Zealand NHI number in plain text",
+            "finding_name": "New Zealand NHI values identify national health index references",
             "risk_factor": 8.2,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -7102,7 +7102,7 @@
             ]
         },
         "AU_IHI": {
-            "finding_name": "Australian individual healthcare identifier (IHI) in plain text",
+            "finding_name": "Australian IHI numbers disclose individual healthcare identifiers",
             "risk_factor": 8.2,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",
@@ -7129,7 +7129,7 @@
             ]
         },
         "AU_BSB": {
-            "finding_name": "Australian BSB code in plain text",
+            "finding_name": "Australian BSB values identify bank and branch routing details",
             "risk_factor": 6.5,
             "category": "Financial Data",
             "sensitivity": "Confidential",
@@ -7156,7 +7156,7 @@
             ]
         },
         "IN_IFSC": {
-            "finding_name": "Indian IFSC code in plain text",
+            "finding_name": "Indian IFSC codes reveal bank and branch identifiers",
             "risk_factor": 5.0,
             "category": "Financial Data",
             "sensitivity": "Internal",
@@ -7183,7 +7183,7 @@
             ]
         },
         "IN_UPI_ID": {
-            "finding_name": "Indian UPI ID in plain text",
+            "finding_name": "UPI handles disclose Indian virtual payment addresses",
             "risk_factor": 6.5,
             "category": "Financial Data",
             "sensitivity": "Confidential",
@@ -7210,7 +7210,7 @@
             ]
         },
         "AE_EMIRATES_ID": {
-            "finding_name": "Emirates ID in plain text",
+            "finding_name": "Emirates ID numbers are readable as UAE identity references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7236,7 +7236,7 @@
             ]
         },
         "SA_NATIONAL_ID": {
-            "finding_name": "Saudi national ID / Iqama in plain text",
+            "finding_name": "Saudi national or Iqama numbers disclose identity registrations",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7262,7 +7262,7 @@
             ]
         },
         "IL_TEUDAT_ZEHUT": {
-            "finding_name": "Israeli identity number in plain text",
+            "finding_name": "Israeli national identity values appear as unmasked numbers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7288,7 +7288,7 @@
             ]
         },
         "EG_NATIONAL_ID": {
-            "finding_name": "Egyptian national ID in plain text",
+            "finding_name": "Egyptian national IDs reveal readable personal identifiers",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7314,7 +7314,7 @@
             ]
         },
         "GH_GHANA_CARD": {
-            "finding_name": "Ghana Card number in plain text",
+            "finding_name": "Ghana Card numbers disclose national identity references",
             "risk_factor": 9.0,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7340,7 +7340,7 @@
             ]
         },
         "IMEI": {
-            "finding_name": "IMEI device identifier in plain text",
+            "finding_name": "IMEI values identify individual mobile devices",
             "risk_factor": 5.0,
             "category": "PII",
             "sensitivity": "Internal",
@@ -7367,7 +7367,7 @@
             ]
         },
         "ICCID": {
-            "finding_name": "SIM card ICCID in plain text",
+            "finding_name": "SIM cards are identifiable through complete ICCID serials",
             "risk_factor": 5.0,
             "category": "PII",
             "sensitivity": "Internal",
@@ -7394,7 +7394,7 @@
             ]
         },
         "VIN": {
-            "finding_name": "Vehicle identification number in plain text",
+            "finding_name": "VIN values reveal individual vehicle identification details",
             "risk_factor": 5.0,
             "category": "PII",
             "sensitivity": "Internal",
@@ -7421,7 +7421,7 @@
             ]
         },
         "PASSPORT_MRZ": {
-            "finding_name": "Passport machine-readable zone in plain text",
+            "finding_name": "Passport MRZ text contains recoverable identity information",
             "risk_factor": 8.2,
             "category": "Regional Compliance",
             "sensitivity": "Restricted",
@@ -7448,7 +7448,7 @@
             ]
         },
         "GEO_COORDINATES": {
-            "finding_name": "Geographic coordinates in plain text",
+            "finding_name": "Latitude and longitude values reveal specific geographic points",
             "risk_factor": 5.0,
             "category": "PII",
             "sensitivity": "Internal",
@@ -7475,7 +7475,7 @@
             ]
         },
         "ICD10_CODE": {
-            "finding_name": "ICD-10 diagnosis code in plain text",
+            "finding_name": "ICD-10 codes disclose medical diagnosis classifications",
             "risk_factor": 6.5,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Confidential",
@@ -7502,7 +7502,7 @@
             ]
         },
         "NDC_CODE": {
-            "finding_name": "National drug code (NDC) in plain text",
+            "finding_name": "US NDC values identify medication products",
             "risk_factor": 5.0,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Internal",
@@ -7529,7 +7529,7 @@
             ]
         },
         "MEDICAL_RECORD_NUMBER": {
-            "finding_name": "Medical record number in plain text",
+            "finding_name": "MRN values disclose identifiers used to reference medical records",
             "risk_factor": 8.2,
             "category": "Healthcare Data (PHI)",
             "sensitivity": "Restricted",

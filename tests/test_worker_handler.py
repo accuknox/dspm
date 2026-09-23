@@ -151,6 +151,8 @@ def test_worker_scanner_errors_are_reported_for_both_connectors():
     with stack, patch.object(handler, "SQLScanner", side_effect=RuntimeError("boom")):
         result = handler.process_bucket("db", "POSTGRES")
     assert result["errors"] == ["postgres scan failed: boom"]
+    # ExitStack consumes its patches on exit; each scenario needs a fresh one.
+    stack, _ = _isolated()
     with stack, patch.object(handler.boto3, "client", side_effect=RuntimeError("no creds")):
         result = handler.process_bucket("bucket", "S3")
     assert result["errors"] == ["S3 scan failed: no creds"]

@@ -10,20 +10,22 @@ then applies what every vendor engine layers on top of pattern matching:
   2. Context policy      a `context: required` detector whose hit carries neither
                          validation nor context is capped at `possible`
                          (Macie keyword requirements, Nightfall "Possible ignores context")
-  3. Record corroboration a `possible` national id / card in a record that also
-                         carries two identity signals (name, e-mail, phone, address,
-                         birth date) is promoted to `likely` (Purview: SSN next to
-                         Name / DateOfBirth; Cyera's identifiability)
+  3. Record corroboration eligible `possible` identifiers next to two identity
+                         signals in the same row/object become `likely`. Array
+                         members have separate scopes. Candidates explicitly
+                         marked needs_context cannot rely on generic identity
+                         signals to disambiguate weak checksums or bare numbers.
   4. Column verdicts     a column whose sampled values match at the policy's ratio
                          is classified as that detector one tier above its cells
                          (Sentra 50% rule, Google column profiles); isolated
                          `possible` hits in an otherwise clean column are dropped
                          (Orca's statistical scan). Sibling columns named for the
-                         detector's companions (expiry / CVV next to a card column,
-                         date of birth next to a national id) raise it one more tier.
-                         A classified column is exclusive: other detectors' hits in it
-                         are coincidences unless `very_likely` on their own (Google SDP
-                         exclude-if-another-infoType-matched)
+                         detector's companions within the same object path raise
+                         an established column verdict one more tier. Sibling
+                         names alone cannot promote isolated weak candidates.
+                         A column's dominant detector suppresses weak competing
+                         interpretations. Independently supported values in separate
+                         spans or cells remain reportable in mixed-content columns.
   5. Minimum counts      `possible` hits that do not classify a column become `likely`
                          when a unit holds enough distinct ones (Purview "low
                          confidence patterns with counts of 20 or more", Nightfall
@@ -49,7 +51,7 @@ from src.engine.context import field_hints
 from src.engine.policy import CONTEXT_NONE, CONTEXT_REQUIRED, DetectorPolicy, policy_for
 from src.engine.rules import tokenize_field_name
 from src.pipeline.columns import ColumnProfile, column_verdict
-from src.pipeline.records import Cell, Record, TextBlob
+from src.pipeline.records import RECORD, Cell, Record, TextBlob
 from src.pipeline.sampling import SettleTracker
 from src.utils.logger import get_logger
 
@@ -125,6 +127,7 @@ class UnitClassifier:
         self.profiles: Dict[Tuple[str, str], ColumnProfile] = {}
         self.text_hits: Dict[str, List[Dict[str, Any]]] = {}
         self.records_seen = 0
+        self.cells_seen = 0
         self.blobs_seen = 0
         self.candidates = 0
 
@@ -215,12 +218,14 @@ class UnitClassifier:
 
     def _feed_record(self, record: Record) -> None:
         self.records_seen += 1
-        hits: List[Tuple[Cell, Dict[str, Any], DetectorPolicy]] = []
-        identity: Set[str] = set()
+        hits: List[Tuple[Cell, int, Dict[str, Any], DetectorPolicy, bool]] = []
+        identity_by_scope: Dict[str, Set[str]] = {}
         for cell in record.cells:
             if not cell.value:
                 continue
             column = cell.column
+            self.cells_seen += 1
+            cell_id = self.cells_seen
             self.values_seen[column] += 1
             for f in self._candidates(cell.value, cell.field):
                 policy = policy_for(f["detector"], f["category"])
@@ -228,24 +233,36 @@ class UnitClassifier:
                     continue
                 self._apply_context_policy(f, policy)
                 self._apply_unit_hint(f)
-                hits.append((cell, f, policy))
+                # Capture support before statistical promotions, so a coincidental
+                # checksum cannot become independent evidence through a nearby name.
+                independent = at_least(f["confidence"], "likely")
+                hits.append((cell, cell_id, f, policy, independent))
                 if policy.identity and at_least(f["confidence"], "likely"):
-                    identity.add(f["detector"])
+                    scope = cell.context_scope if record.shape == RECORD else ""
+                    identity_by_scope.setdefault(scope, set()).add(f["detector"])
         self.candidates += len(hits)
-        if len(identity) >= 2:
-            for cell, f, policy in hits:
-                if policy.identity_corroboration and f["confidence"] == CANDIDATE_TIER and f["detector"] not in identity:
-                    f["confidence"] = "likely"
-                    f["evidence"].append("record:identity")
+        for cell, cell_id, f, policy, independent in hits:
+            scope = cell.context_scope if record.shape == RECORD else ""
+            identity = identity_by_scope.get(scope, set())
+            # Bare numeric / weak-checksum candidates explicitly need identifier
+            # context. A name and email cannot distinguish them from ordinary refs.
+            # In documents, unrelated objects and array members are not one identity.
+            if (
+                len(identity) >= 2 and policy.identity_corroboration
+                and f["confidence"] == CANDIDATE_TIER and f["detector"] not in identity
+                and not f.get("needs_context")
+            ):
+                f["confidence"] = "likely"
+                f["evidence"].append("record:identity")
         new_pair = False
-        for cell, f, policy in hits:
+        for cell, cell_id, f, policy, independent in hits:
             key = (cell.column, f["detector"])
             profile = self.profiles.get(key)
             if profile is None:
                 profile = ColumnProfile(cell.column, f["detector"], f["category"], f["severity"])
                 self.profiles[key] = profile
                 new_pair = True
-            profile.add(f, self._format(f, cell.location))
+            profile.add(f, self._format(f, cell.location), cell_id, independent)
         self.settle.observe(self.records_seen, new_pair)
 
     def _feed_blob(self, blob: TextBlob) -> None:
@@ -269,8 +286,11 @@ class UnitClassifier:
             if not sampled:
                 continue
             policy = policy_for(detector, profile.category)
+            if not policy.column_classify:
+                continue
             threshold = policy.column_ratio if self.column_ratio is None else float(self.column_ratio)
-            pairs.append((profile.matches / sampled, threshold))
+            numerator = profile.validated if policy.column_requires_validation else profile.matches
+            pairs.append((numerator / sampled, threshold))
         return pairs
 
     @property
@@ -297,10 +317,14 @@ class UnitClassifier:
                 it["evidence"].append(f"count:{distinct}")
 
     def _siblings_of(self, column: str, policy: DetectorPolicy, tokens_by_column: Dict[str, str]) -> List[str]:
-        """Other columns of the unit whose names corroborate the detector (Sentra: expiry and CVV next to a card column)."""
+        """Related columns under the same parent path; strengthens established verdicts only."""
         if policy.siblings is None:
             return []
-        return [other for other, tokens in tokens_by_column.items() if other != column and policy.has_sibling(tokens)]
+        parent = column.rpartition(".")[0]
+        return [
+            other for other, tokens in tokens_by_column.items()
+            if other != column and other.rpartition(".")[0] == parent and policy.has_sibling(tokens)
+        ]
 
     def _finish_columns(self) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
@@ -315,8 +339,9 @@ class UnitClassifier:
             )
         # Column exclusivity (Google SDP "exclude if another infoType matched"): once a column
         # is classified, the detector with the densest - then best validated - verdict owns it.
-        # Other detectors' hits in that column are coincidences unless they bring their own
-        # statistical proof (validated on at least 20% of the sampled values) or are secrets.
+        # Weak alternatives still need their own statistical proof. An independently
+        # supported value outside the owner's spans is not an alternative interpretation
+        # of the same value: notes and heterogeneous fields can hold several data types.
         owner: Dict[str, str] = {}
 
         def strength(column: str, detector: str) -> tuple:
@@ -337,12 +362,19 @@ class UnitClassifier:
             policy = policy_for(detector, profile.category)
             sampled = self.values_seen.get(column, 0)
             verdict = verdicts[(column, detector)]
-            items = list(profile.items)
+            # finish() must not feed its promotions back into stored observations.
+            items = [dict(it, evidence=list(it["evidence"])) for it in profile.items]
             if owner.get(column) not in (None, detector):
+                dominant = self.profiles[(column, owner[column])]
                 own_proof = sampled and profile.validated / sampled >= STRAGGLER_MIN_VALIDATED_RATIO
-                if profile.category not in _EXCLUSIVITY_EXEMPT_CATEGORIES and not own_proof:
-                    continue
-                items = [it for it in items if it["confidence"] == "very_likely"]
+                exempt = profile.category in _EXCLUSIVITY_EXEMPT_CATEGORIES
+                items = [
+                    it for it, source in zip(items, profile.sources)
+                    if (
+                        source.independent
+                        and not any(source.overlaps(other) for other in dominant.sources_by_cell.get(source.cell_id, ()))
+                    ) or ((exempt or own_proof) and it["confidence"] == "very_likely")
+                ]
                 if not items:
                     continue
             siblings = self._siblings_of(column, policy, tokens_by_column)
@@ -358,11 +390,8 @@ class UnitClassifier:
                     if sibling_tag:
                         it["evidence"].append(sibling_tag)
             else:
-                if siblings:
-                    for it in items:
-                        if it["confidence"] == CANDIDATE_TIER:
-                            it["confidence"] = "likely"
-                        it["evidence"].append(sibling_tag)
+                # A sibling's name can strengthen an established column verdict,
+                # but cannot by itself turn an isolated ambiguous value into an alert.
                 self._promote_by_count(items, policy)
             items = [it for it in items if at_least(it["confidence"], self.min_confidence)]
             if not items:
@@ -381,6 +410,8 @@ class UnitClassifier:
                     "column_sampled": sampled,
                     "column_matches": profile.matches,
                     "column_ratio": round(profile.matches / sampled, 3) if sampled else None,
+                    "column_validated_matches": profile.validated,
+                    "column_validated_ratio": round(profile.validated / sampled, 3) if sampled else None,
                 })
                 out.append(aggregated)
             else:
@@ -389,7 +420,8 @@ class UnitClassifier:
 
     def _finish_text(self) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
-        for detector, items in self.text_hits.items():
+        for detector, stored in self.text_hits.items():
+            items = [dict(it, evidence=list(it["evidence"])) for it in stored]
             policy = policy_for(detector, items[0]["category"])
             self._promote_by_count(items, policy)
             out.extend(it for it in items if at_least(it["confidence"], self.min_confidence))

@@ -51,12 +51,14 @@ Fields
     identity_corroboration
                         a `possible` hit is promoted one tier when the same record carries
                         two or more identity signals (Purview: SSN with Name / DateOfBirth
-                        in proximity; Cyera's "identifiability")
+                        in proximity; Cyera's "identifiability"). The pipeline limits
+                        this to the same row/object scope and excludes candidates marked
+                        needs_context: generic identity signals do not disambiguate them.
     negative_fields     regex over the tokenised field name that vetoes the detector
                         (DLP negative keywords; Google exclude-by-hotword on a header)
-    siblings            regex over the tokenised names of the *other* columns of the unit:
-                        a match raises the detector's column one tier (Sentra: an expiry
-                        and a CVV column next to a card column)
+    siblings            regex over the tokenised names of other columns under the same
+                        parent path. A match raises an established column verdict one
+                        tier; it cannot promote isolated weak matches on its own.
 
 Policies are looked up by detector name, falling back to the finding's
 category; new detectors need no entry unless they deviate from their
