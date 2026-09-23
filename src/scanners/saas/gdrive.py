@@ -28,8 +28,6 @@ user's My Drive, or pinned to one shared drive (target/drive_id). Without a
 key file, Application Default Credentials are used.
 """
 import os
-import shutil
-import tempfile
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 # Conditional imports for soft failures, like pymongo in the Mongo connector
@@ -232,7 +230,7 @@ class GoogleDriveScanner(BaseScanner):
             f"({'export ' + mime.rsplit('.', 1)[-1] if exported else mime or 'binary'}"
             f"{'' if exported else f', {size} bytes'})",
         )
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = self.workdir(resource_id)
         try:
             if mime in EXPORT_FORMATS:
                 export_mime, ext = EXPORT_FORMATS[mime]
@@ -266,4 +264,4 @@ class GoogleDriveScanner(BaseScanner):
             self.record_error(f"{resource_id}: {str(e)[:200]}")
             logger.error(f"Error scanning Drive file {resource_id}: {str(e)}")
         finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
+            self.discard_workdir(temp_dir)

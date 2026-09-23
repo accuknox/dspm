@@ -194,6 +194,9 @@ def scan_config() -> Dict[str, Any]:
         config["column_ratio"] = settings.COLUMN_RATIO
     if settings.MIN_COUNT is not None:
         config["min_count"] = settings.MIN_COUNT
+    if settings.KEEP_SCANNED_FILES:
+        # Every file a connector downloads or exports stays under <OUTPUT_DIR>/scanned (BaseScanner.workdir)
+        config["keep_files_dir"] = str(OUTPUT_DIR / "scanned")
     return config
 
 
@@ -207,6 +210,10 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
 
     errors = []
     config = scan_config()
+    if config.get("keep_files_dir"):
+        logger.warning(
+            f"KEEP_SCANNED_FILES is on: every scanned file is kept under {config['keep_files_dir']} (local testing only)",
+        )
 
     scan_date = datetime.today().date()
     start_time = datetime.now()

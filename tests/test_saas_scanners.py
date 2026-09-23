@@ -1,4 +1,7 @@
 """SaaS connectors (Google Drive, Salesforce) against fake authorized sessions."""
+import os
+import tempfile
+
 from src.engine.detector import DetectionEngine
 from src.scanners.saas.gdrive import GoogleDriveScanner
 from src.scanners.saas.salesforce import SalesforceScanner
@@ -67,6 +70,20 @@ def test_gdrive_scanner_scans_downloads_and_exports():
     _url, list_params = session.requests[0]
     assert list_params["corpora"] == "user"
     assert "trashed = false" in list_params["q"]
+
+
+def test_gdrive_scanner_keeps_downloaded_files_when_configured():
+    keep_root = tempfile.mkdtemp()
+    scanner = GoogleDriveScanner(DetectionEngine(), config={"keep_files_dir": keep_root}, client=_FakeDriveSession())
+
+    units = list(scanner.iter_scan({"impersonate_user": "someone@example.com"}))
+
+    assert [name for _rid, name, _f in units] == ["notes.txt", "Quarterly deck"]
+    drive_dir = os.path.join(keep_root, "gdrive", "someone@example.com")
+    # downloads are kept as-is under <file id>/<name>; exports carry the extension the parsers were given
+    with open(os.path.join(drive_dir, "f1", "notes.txt"), "rb") as fh:
+        assert fh.read().startswith(b"Contact: john.doe@accuknox.com")
+    assert os.path.isfile(os.path.join(drive_dir, "f2", "Quarterly deck.txt"))
 
 
 def test_gdrive_incremental_filter_in_listing_query():

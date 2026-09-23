@@ -52,6 +52,53 @@ def test_s3_scanner(mock_boto_client):
     assert "Email" in detectors
 
 
+def test_resource_path_mirrors_the_source_and_stays_inside_the_root():
+    from src.scanners.base import resource_path
+
+    assert resource_path("arn:aws:s3:::bucket/exports/2026/a.csv") == os.path.join("s3", "bucket", "exports", "2026", "a.csv")
+    assert resource_path("gdrive://u@x.com/1AbC/Q3 report (final).docx") == os.path.join("gdrive", "u@x.com", "1AbC", "Q3 report (final).docx")
+    assert resource_path("salesforce://acme.my.salesforce.com/ContentVersion/068xx/scan.pdf") == os.path.join(
+        "salesforce", "acme.my.salesforce.com", "ContentVersion", "068xx", "scan.pdf",
+    )
+    # traversal segments and unsafe characters can neither escape nor break the keep directory
+    assert resource_path("arn:aws:s3:::bucket/../../etc/passwd") == os.path.join("s3", "bucket", "etc", "passwd")
+    assert resource_path("gdrive://u@x.com/a:b|c") == os.path.join("gdrive", "u@x.com", "a_b_c")
+    assert resource_path("") == "object"
+
+
+@patch("boto3.client")
+def test_s3_scanner_keeps_downloaded_files_when_configured(mock_boto_client):
+    def mock_download(bucket, key, path):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("User email: john.doe@accuknox.com\n")
+
+    s3_mock = MagicMock()
+    s3_mock.download_file.side_effect = mock_download
+    mock_boto_client.return_value = s3_mock
+    target = {"bucket": "test-bucket", "key": "exports/2026/test-data.txt"}
+
+    keep_root = tempfile.mkdtemp()
+    findings = S3Scanner(DetectionEngine(), config={"keep_files_dir": keep_root}).scan(target)
+
+    assert [f["detector"] for f in findings] == ["Email"]
+    kept = os.path.join(keep_root, "s3", "test-bucket", "exports", "2026", "test-data.txt")
+    assert os.path.isfile(kept)
+    with open(kept, encoding="utf-8") as f:
+        assert "john.doe@accuknox.com" in f.read()
+
+    # Without the setting the object lands in a temporary directory that is gone after the scan
+    created = []
+    real_mkdtemp = tempfile.mkdtemp
+
+    def capturing_mkdtemp(*args, **kwargs):
+        created.append(real_mkdtemp(*args, **kwargs))
+        return created[-1]
+
+    with patch("src.scanners.base.tempfile.mkdtemp", side_effect=capturing_mkdtemp):
+        S3Scanner(DetectionEngine()).scan(target)
+    assert created and not any(os.path.exists(p) for p in created)
+
+
 def test_sql_scanner():
     try:
         import sqlalchemy  # noqa: F401

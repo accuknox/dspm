@@ -20,8 +20,6 @@ applies unchanged. Files are downloaded to temporary disk and go through
 the shared parsers, one unit per file.
 """
 import os
-import shutil
-import tempfile
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import urlsplit
 
@@ -316,7 +314,7 @@ class SalesforceScanner(BaseScanner):
                     continue
 
                 resource_id = f"salesforce://{host}/{obj}/{file_id}/{file_name}"
-                temp_dir = tempfile.mkdtemp()
+                temp_dir = self.workdir(resource_id)
                 try:
                     resp = session.get(f"{base}/sobjects/{obj}/{file_id}/{blob_field}", timeout=300)
                     if resp.status_code >= 300:
@@ -332,4 +330,4 @@ class SalesforceScanner(BaseScanner):
                     self.record_error(f"{resource_id}: {str(e)[:200]}")
                     logger.error(f"Error scanning Salesforce file {resource_id}: {str(e)}")
                 finally:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    self.discard_workdir(temp_dir)

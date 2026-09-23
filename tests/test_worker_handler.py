@@ -20,7 +20,7 @@ _NEUTRAL_SETTINGS = {
     "OBJECTS_TO_SCAN": None, "OBJECT_NAME": None, "OBJECT_TYPE": None, "NER_ENABLED": False, "SAMPLE_STRATEGY": "head",
     "DISABLED_DETECTORS": [], "ALLOW_LIST": [], "ALLOW_REGEX": [], "COLUMN_RATIO": None, "MIN_COUNT": None,
     "AGGREGATION_THRESHOLD": 25, "SAMPLE_LIMIT": 10000, "REPORT_PRIVATE_IPS": False, "REPORT_TOKEN_LIKE_VALUES": False,
-    "MIN_CONFIDENCE": "likely", "ADAPTIVE_SAMPLING": False,
+    "MIN_CONFIDENCE": "likely", "ADAPTIVE_SAMPLING": False, "KEEP_SCANNED_FILES": False,
 }
 
 
@@ -217,6 +217,16 @@ def test_worker_target_parsing_and_guards():
     assert "Unsupported object type 'ORACLE'" in body["results"][0]["errors"][0]
 
 
+def test_keep_scanned_files_reaches_the_scan_config():
+    out_dir = Path(tempfile.mkdtemp())
+    stack, _findings_dir = _isolated(KEEP_SCANNED_FILES=True)
+    with stack, patch.object(handler, "OUTPUT_DIR", out_dir):
+        assert handler.scan_config()["keep_files_dir"] == str(out_dir / "scanned")
+    stack, _findings_dir = _isolated()
+    with stack:
+        assert "keep_files_dir" not in handler.scan_config()
+
+
 def test_env_settings_reach_the_scan_config():
     import importlib
     import os
@@ -225,7 +235,7 @@ def test_env_settings_reach_the_scan_config():
         "DISABLED_DETECTORS": "PII.IPAddress, MAC_ADDRESS", "ALLOW_LIST": '["support@acme-corp.io", "+91 80 4000 0000"]',
         "ALLOW_REGEX": '["@partner-example$"]', "COLUMN_RATIO": "0.6", "MIN_COUNT": "8", "AGGREGATION_THRESHOLD": "40",
         "SAMPLE_LIMIT": "2500", "MIN_CONFIDENCE": "very_likely", "SAMPLE_STRATEGY": "random", "NER_ENABLED": "false",
-        "REPORT_PRIVATE_IPS": "true", "ENABLED_REGIONS": "US,IN",
+        "REPORT_PRIVATE_IPS": "true", "ENABLED_REGIONS": "US,IN", "KEEP_SCANNED_FILES": "true",
     }
     with patch.dict(os.environ, env, clear=False):
         fresh = importlib.reload(settings)
@@ -235,10 +245,12 @@ def test_env_settings_reach_the_scan_config():
         assert fresh.COLUMN_RATIO == 0.6 and fresh.MIN_COUNT == 8 and fresh.AGGREGATION_THRESHOLD == 40 and fresh.SAMPLE_LIMIT == 2500
         assert fresh.MIN_CONFIDENCE == "very_likely" and fresh.SAMPLE_STRATEGY == "random" and fresh.NER_ENABLED is False
         assert fresh.REPORT_PRIVATE_IPS is True and fresh.ENABLED_REGIONS == ["US", "IN"]
+        assert fresh.KEEP_SCANNED_FILES is True
         config = handler.scan_config()
         assert config["disabled_detectors"] == ["PII.IPAddress", "MAC_ADDRESS"] and config["column_ratio"] == 0.6
         assert config["min_count"] == 8 and config["aggregation_threshold"] == 40 and config["min_confidence"] == "very_likely"
         assert config["sample_strategy"] == "random" and config["ner"] is False and config["report_private_ips"] is True
+        assert config["keep_files_dir"] == str(handler.OUTPUT_DIR / "scanned")
     finally:
         with patch.dict(os.environ, {k: "" for k in env}, clear=False):
             importlib.reload(settings)

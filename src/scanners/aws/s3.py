@@ -1,6 +1,4 @@
 import os
-import shutil
-import tempfile
 from typing import Any, Dict, List
 
 import boto3
@@ -52,8 +50,8 @@ class S3Scanner(BaseScanner):
                 )
                 return []
 
-        # Download to a temporary file
-        temp_dir = tempfile.mkdtemp()
+        # Download to a temporary directory (kept under config['keep_files_dir'] when set)
+        temp_dir = self.workdir(resource_id)
         temp_file_path = os.path.join(temp_dir, os.path.basename(key) or "object.tmp")
 
         try:
@@ -76,11 +74,7 @@ class S3Scanner(BaseScanner):
             logger.error(f"Error scanning S3 object {resource_id}: {str(e)}")
             return []
         finally:
-            # Clean up temp files and directories
-            try:
-                shutil.rmtree(temp_dir)
-            except Exception:
-                pass
+            self.discard_workdir(temp_dir)
 
     def list_all_files(self, bucket: str):
         paginator = self.client.get_paginator("list_objects_v2")

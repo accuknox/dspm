@@ -21,7 +21,10 @@ Adding a connector therefore means implementing:
 See src/scanners/db/sql.py (columnar rows), src/scanners/db/mongo.py
 (documents) and src/scanners/files/parsers.py (files) for the three shapes.
 """
+import os
 import re
+import shutil
+import tempfile
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
@@ -42,6 +45,27 @@ DEFAULT_COLUMN_SUPPRESSION = {
 }
 
 LocationFn = Callable[[str, int], str]
+
+_S3_ARN_PREFIX = "arn:aws:s3:::"
+_UNSAFE_PATH_CHARS = re.compile(r"[^A-Za-z0-9._@()+ -]")
+
+
+def resource_path(resource_id: str) -> str:
+    """
+    A relative, traversal-safe directory path that mirrors a resource id:
+    arn:aws:s3:::bucket/exports/a.csv -> s3/bucket/exports/a.csv,
+    gdrive://u@x.com/<file id>/Q3 deck -> gdrive/u@x.com/<file id>/Q3 deck.
+    Every segment is sanitised; '.', '..' and empty segments are dropped.
+    """
+    rid = str(resource_id or "")
+    if rid.startswith(_S3_ARN_PREFIX):
+        rid = "s3/" + rid[len(_S3_ARN_PREFIX):]
+    segments = []
+    for segment in rid.replace("://", "/").replace("\\", "/").split("/"):
+        segment = _UNSAFE_PATH_CHARS.sub("_", segment).strip(" .")
+        if segment:
+            segments.append(segment[:120])
+    return os.path.join(*segments) if segments else "object"
 
 
 class BaseScanner(ABC):
@@ -135,6 +159,35 @@ class BaseScanner(ABC):
                 ),
             )
         return self.dedup_findings(findings)
+
+    def workdir(self, resource_id: str) -> str:
+        """
+        Where a connector materialises one remote object before scan_local_file():
+        a fresh temporary directory, removed again by discard_workdir().
+
+        With config["keep_files_dir"] set (the worker sets it to <OUTPUT_DIR>/scanned
+        when KEEP_SCANNED_FILES=true) the directory is <keep_files_dir>/<resource path>
+        instead and survives the scan, so the exact bytes the scanner classified can be
+        opened afterwards: s3/<bucket>/<key>, gdrive/<user or drive>/<file id>/<name>,
+        salesforce/<host>/<object>/<record id>/<name>. Local testing only - it
+        duplicates the sensitive data on disk.
+        """
+        keep_root = self.config.get("keep_files_dir")
+        if not keep_root:
+            return tempfile.mkdtemp()
+        path = os.path.join(keep_root, os.path.dirname(resource_path(resource_id)))
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    def discard_workdir(self, path: str) -> None:
+        """Removes a workdir() again, unless it lives under config["keep_files_dir"]."""
+        keep_root = self.config.get("keep_files_dir")
+        if keep_root:
+            root = os.path.abspath(keep_root)
+            target = os.path.abspath(path)
+            if target == root or target.startswith(root + os.sep):
+                return
+        shutil.rmtree(path, ignore_errors=True)
 
     def record_error(self, detail: str) -> None:
         self.stats["errors"] = self.stats.get("errors", 0) + 1

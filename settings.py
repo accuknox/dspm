@@ -106,6 +106,7 @@ ADAPTIVE_SAMPLING = _bool_env("ADAPTIVE_SAMPLING", "false")  # stop reading a ta
 NER_ENABLED = _bool_env("NER_ENABLED", "true")  # person names in prose through spaCy (src/engine/ner.py)
 NER_MODEL = os.environ.get("NER_MODEL", "").strip()  # en_core_web_trf (default when installed) | en_core_web_sm; read by src/engine/ner.py
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", None)  # findings/work dir; default <repo>/output
+KEEP_SCANNED_FILES = _bool_env("KEEP_SCANNED_FILES", "false")  # keep every downloaded/exported file under <OUTPUT_DIR>/scanned; local testing only
 
 # Regional compliance packs, comma-separated (US, IN, CA, GB)
 _regions = os.environ.get("ENABLED_REGIONS", "US,IN,GB")

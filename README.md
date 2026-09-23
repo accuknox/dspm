@@ -22,7 +22,7 @@ There are two entry points:
    python -m src.dspm_scanner_worker_handler
    ```
 
-   Findings are written to `output/findings/<OBJECT_NAME>-<YYYY-MM-DD>.json` (one file per target) and uploaded as a zip archive to `CSPM_URL` if configured. The JSON has the same layout for buckets and databases: `findings` holds one entry per scanned object key, `schema.table` or collection (an empty list when it is clean), and `files_scanned` counts them.
+   Findings are written to `output/findings/<OBJECT_NAME>-<YYYY-MM-DD>.json` (one file per target) and uploaded as a zip archive to `CSPM_URL` if configured. The JSON has the same layout for buckets and databases: `findings` holds one entry per scanned object key, `schema.table` or collection (an empty list when it is clean), and `files_scanned` counts them. With `KEEP_SCANNED_FILES=true` the files the scanner downloaded or exported (S3 objects, Drive files, Salesforce attachments) are kept under `output/scanned/` as well, to check what the parsers actually saw; leave it off anywhere but a test run.
 
 2. **Master** (`src/dspm_scanner_master_handler.py`) — AWS Lambda handler that scans one target per invocation payload (also accepts SQS-wrapped payloads, S3 event notifications, and DynamoDB Stream batches).
 
@@ -55,6 +55,7 @@ There are two entry points:
 | `COLUMN_RATIO` / `MIN_COUNT` | no | Override every detector's column-classification share (policy default `0.5`) / distinct-`possible`-hits promotion count (policy default `10`); empty keeps the per-detector policies |
 | `AGGREGATION_THRESHOLD` | no | Hits per (detector, column) that collapse into one column-level finding, default `25`; `0` disables |
 | `OUTPUT_DIR` | no | Findings/work directory. Default `<repo>/output`; the container image sets `/app/output` — point it at a mounted volume to persist findings |
+| `KEEP_SCANNED_FILES` | no | `true` keeps every file a connector downloaded or exported under `<OUTPUT_DIR>/scanned/`, mirroring the source (`s3/<bucket>/<key>`, `gdrive/<user or drive>/<file id>/<name>`, `salesforce/<host>/<object>/<id>/<name>`), instead of deleting it after classification. Local testing only: it duplicates the sensitive data on disk |
 
 ### S3
 
@@ -261,6 +262,7 @@ Like the database targets, `password_secret` (an AWS Secrets Manager ARN) can su
 | `connect_timeout` | 10 | Connection timeout in seconds (SQL and Mongo) |
 | `log_queries` | `false` (worker mode: always on) | Log every query issued during DB scans (dialect-compiled SQL with bound values, Mongo filters, DynamoDB scans). Note: emits table/column names into logs |
 | `last_scan_time` | – | S3 only: skip objects not modified since this timestamp |
+| `keep_files_dir` | – | Keep every downloaded/exported file under this directory, mirroring the source path, instead of deleting it after classification (the worker sets `<OUTPUT_DIR>/scanned` when `KEEP_SCANNED_FILES=true`). Local testing only |
 | `aggregation_threshold` | `25` | A (detector, column) pair firing on at least this many rows/documents/cells collapses into one column-level finding with an `occurrences` count. `0` disables |
 | `min_confidence` | `likely` | Lowest confidence tier reported: `possible` / `likely` / `very_likely` (a legacy `score_threshold` float is accepted) |
 | `column_ratio` | per detector (`0.5`) | Share of a column's sampled non-empty values that must match before the column is classified (Sentra's 50 % rule); overrides every detector policy |
@@ -403,7 +405,7 @@ Rules of the contract:
 1. Emit `Record`s for rows/documents (`Cell.field` is the column name or dotted path the engine uses as context; `Cell.key` the aggregation key when array indices should collapse; `src.pipeline.document_record` builds one from any nested document) and `TextBlob`s for free text (`locate(start, end)` renders span locations).
 2. Keep `location` strings connector-specific and stable; pass `location_fn(column, n)` for column-level findings.
 3. Count what you read in `self.stats` inside the generator (it keeps counting when adaptive sampling stops early) and let `classify()` record read errors (`self.stats["errors"]`, `error_details`).
-4. Files of any origin go through `src/scanners/files.iter_units(path, resource_id, config)` — an object-store connector only downloads.
+4. Files of any origin go through `src/scanners/files.iter_units(path, resource_id, config)` — an object-store connector only downloads, into `self.workdir(resource_id)`, released with `self.discard_workdir()` afterwards, so `KEEP_SCANNED_FILES` works for every connector.
 5. New detectors are `Rule`s in `src/engine/recognizers/` plus a `fixtures/findings-mapping.json` entry, and, only if they deviate from their category, a `DetectorPolicy` in `src/engine/policy.py`.
 
 ## TLS to databases
