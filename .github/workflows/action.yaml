@@ -18,7 +18,8 @@ env:
   AWS_REGION: us-east-1
 
 # Publishing a release from the GitHub UI with a new tag fires both `push` and `release` for that
-# tag. Queue the two runs so the second one reuses the image the first one pushed.
+# tag. Queue the runs so they never race: each one rebuilds (warm cache), pushes the same tags and
+# rewrites the same notes section, so the notes always describe the image currently behind the tag.
 concurrency:
   group: dspm-image-${{ github.ref_name }}
   cancel-in-progress: false
@@ -36,9 +37,9 @@ jobs:
       tag: ${{ steps.image.outputs.tag }}
       tags: ${{ steps.image.outputs.tags }}
       platforms: ${{ steps.image.outputs.platforms }}
+      built_at: ${{ steps.image.outputs.built_at }}
       digest: ${{ steps.digest.outputs.digest }}
       manifests: ${{ steps.digest.outputs.manifests }}
-      built_at: ${{ steps.digest.outputs.built_at }}
 
     steps:
       - name: Checkout code
@@ -78,32 +79,8 @@ jobs:
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Check for an image already built from this commit
-        id: existing
-        env:
-          REF: ${{ steps.image.outputs.image }}:${{ steps.image.outputs.tag }}
-        run: |
-          set -euo pipefail
-          # The build step labels the image with its source commit (org.opencontainers.image.revision).
-          # If the registry already holds this tag built from the same commit, an earlier run of this
-          # workflow made it and it is reused. A moved tag or an unlabelled image is rebuilt.
-          found=false
-          if config="$(docker buildx imagetools inspect --format '{{json .Image}}' "$REF" 2>/dev/null)"; then
-            revisions="$(jq -r '[.. | objects | .Labels? // empty | .["org.opencontainers.image.revision"] // empty] | unique | join(",")' <<<"$config")"
-            if [ "$revisions" = "$GITHUB_SHA" ]; then
-              found=true
-              echo "::notice::$REF was already built from $GITHUB_SHA by an earlier run; reusing it."
-            else
-              echo "$REF exists but was built from '${revisions:-no revision label}'; rebuilding."
-            fi
-          else
-            echo "$REF is not in the registry yet; building."
-          fi
-          echo "found=$found" >> "$GITHUB_OUTPUT"
-
       - name: Build and push Docker image to ECR
         id: build
-        if: steps.existing.outputs.found != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -111,7 +88,7 @@ jobs:
           push: true
           tags: ${{ steps.image.outputs.tags }}
           platforms: ${{ steps.image.outputs.platforms }}
-          # OCI labels; the revision is what the check above looks for.
+          # OCI labels so the image itself records where it came from.
           labels: |
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ steps.image.outputs.tag }}
@@ -127,25 +104,20 @@ jobs:
         env:
           IMAGE: ${{ steps.image.outputs.image }}
           TAG: ${{ steps.image.outputs.tag }}
-          BUILD_DIGEST: ${{ steps.build.outputs.digest }}
-          RUN_BUILT_AT: ${{ steps.image.outputs.built_at }}
+          DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
-          # Digest of the multi-arch index: from the build, or from the registry when the image was reused.
-          digest="${BUILD_DIGEST:-$(docker buildx imagetools inspect --format '{{json .Manifest}}' "$IMAGE:$TAG" | jq -r '.digest')}"
-          index="$(docker buildx imagetools inspect --format '{{json .Manifest}}' "$IMAGE@$digest")"
+          [ -n "$DIGEST" ] || { echo "::error::the build step reported no image digest"; exit 1; }
+          # Read the index back by its digest (content-addressed, so exactly what was just built).
+          index="$(docker buildx imagetools inspect --format '{{json .Manifest}}' "$IMAGE@$DIGEST")"
           # Platform manifests only: BuildKit also attaches provenance attestations as unknown/unknown.
           manifests="$(jq -c '[.manifests[]? | select(.platform.os != "unknown")
             | {platform: ([.platform.os, .platform.architecture, .platform.variant // empty] | join("/")), digest}]' <<<"$index")"
-          # Build time recorded in the image itself, so a reused image reports when it was really built.
-          built_at="$(docker buildx imagetools inspect --format '{{json .Image}}' "$IMAGE@$digest" \
-            | jq -r '[.. | objects | .Labels? // empty | .["org.opencontainers.image.created"] // empty] | first // empty')"
           {
-            echo "digest=$digest"
+            echo "digest=$DIGEST"
             echo "manifests=$manifests"
-            echo "built_at=${built_at:-$RUN_BUILT_AT}"
           } >> "$GITHUB_OUTPUT"
-          echo "$IMAGE:$TAG@$digest"
+          echo "$IMAGE:$TAG@$DIGEST"
           jq . <<<"$manifests"
 
   update-release:
@@ -220,13 +192,20 @@ jobs:
               END,
             ].filter((line) => line !== null).join('\n');
 
-            // Replace the section an earlier run wrote, or append it after the existing notes.
+            // Replace the section an earlier run wrote, or append it after the existing notes. A body
+            // that lost one of its markers to a hand edit is cleaned of the stray marker first, so the
+            // section is never duplicated and nothing outside a complete marker pair is ever removed.
+            const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const block = new RegExp(`${escape(START)}[\\s\\S]*?${escape(END)}`);
             const body = release.body ?? '';
-            const start = body.indexOf(START);
-            const end = body.indexOf(END, start);
-            const updated = start !== -1 && end !== -1
-              ? body.slice(0, start) + section + body.slice(end + END.length)
-              : (body.trim() ? body.trimEnd() + '\n\n' : '') + section + '\n';
+            let updated;
+            if (block.test(body)) {
+              updated = body.replace(block, () => section);
+            } else {
+              const cleaned = body.replaceAll(START, '').replaceAll(END, '');
+              if (cleaned !== body) core.warning(`Release ${TAG} had a stray image-info marker; removed it before adding the section.`);
+              updated = (cleaned.trim() ? cleaned.trimEnd() + '\n\n' : '') + section + '\n';
+            }
             if (updated === body) {
               core.info(`Release ${TAG} already lists ${IMAGE}:${TAG}@${DIGEST}; nothing to do.`);
               return;
