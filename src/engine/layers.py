@@ -205,6 +205,16 @@ def validate_email(email: str) -> Optional[str]:
 
 
 LOOSE_PHONE_RE = re.compile(r"\+?\(?\d[\d\s().\-/]{5,22}\d")
+_PLACEHOLDER_PHONE_DIGITS = ("1234567890", "0123456789", "0000000000", "1111111111", "800123456")
+
+
+def _placeholder_phone(text: str, start: int, end: int) -> bool:
+    """Documented example numbers (123-456-7890, 0800 123 456, all-zero runs) and decimal fragments (12.3456 78)."""
+    digits = re.sub(r"\D", "", text[start:end])
+    if any(digits.endswith(k) for k in _PLACEHOLDER_PHONE_DIGITS):
+        return True
+    # 555-01xx numbers are fictional but stay reportable: the regression corpus holds real scans that contain them
+    return start > 1 and text[start - 1] == "." and text[start - 2].isdigit()
 _MONTHS = r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?"
 DOB_REGEX = re.compile(
     r"\b(?:(?:19|20)\d{2}[-/.](?:0[1-9]|1[0-2])[-/.](?:0[1-9]|[12]\d|3[01])"            # 1985-08-12
@@ -340,6 +350,8 @@ def scan_pii(
         for match in (phonenumbers.PhoneNumberMatcher(text, None) if digit_count >= 7 else ()):
             raw = match.raw_string
             seen_spans.add((match.start, match.end))
+            if _placeholder_phone(text, match.start, match.end):
+                continue
             score = 0.85 if raw.lstrip().startswith(("+", "00")) else 0.5
             if phone_context or near(text, match.start, match.end, CONTEXT_WORDS["Phone Number"]):
                 score = max(score, 0.85)
@@ -356,6 +368,8 @@ def scan_pii(
                     # the keyword must sit next to the number, not somewhere in the first 200 characters;
                     # a bare national-format digit run is left to the checksum detectors (NHS, SSN, accounts)
                     if not (phone_context or near(text, match.start, match.end, CONTEXT_WORDS["Phone Number"])):
+                        continue
+                    if _placeholder_phone(text, match.start, match.end):
                         continue
                     findings.append(_finding("Phone Number", _CATEGORY_PII, "Medium", match.raw_string, 0.85, match.start, match.end, region=region.upper()))
             except Exception:
@@ -472,6 +486,15 @@ NON_PERSON_NAME_QUALIFIERS = {
     "team", "group", "plan", "policy", "file", "user", "host", "domain", "server", "table", "column", "field", "display",
     "screen", "model", "device", "app", "application", "service", "agency", "firm", "corporation", "entity", "branch",
     "merchant", "issuer", "carrier", "insurer", "ship", "vessel", "property", "estate", "building", "street", "road",
+    "chemical", "strategy", "scheme", "programme", "program", "portfolio", "index", "asset", "security", "bond", "stock",
+    "ticker", "template", "report", "document", "dataset", "method", "process", "procedure", "task", "event", "item",
+    "material", "substance", "compound", "drug", "medication", "species", "variety", "breed", "trade", "dba",
+}
+# "Guarantor: Not Applicable", "Customer: Sure, ..." - a capitalised opener that is not a name
+NON_NAME_OPENERS = {
+    "not", "applicable", "none", "sure", "yes", "no", "unknown", "see", "please", "thank", "thanks", "dear", "hello", "hi",
+    "the", "this", "that", "same", "other", "various", "multiple", "any", "all", "each", "per", "as", "to", "be", "n/a",
+    "ok", "okay", "yes,", "no,", "pending", "confirmed", "approved", "declined", "unavailable", "available", "required",
 }
 NAME_KEYS_PROSE_RE = re.compile(
     r"(?<![A-Za-z])(?i:\**(?P<key>first name|last name|surname|given name|family name|middle name|full name|patient name|"
@@ -507,6 +530,8 @@ def scan_person_names(text: str, field_name: Optional[str] = None) -> list:
             if qualifier and qualifier[-1].lower() in NON_PERSON_NAME_QUALIFIERS:
                 continue
         key_single = key != "name" and _SINGLE_NAME_FIELD_RE.search(key) is not None
+        if val.split()[0].lower().rstrip(",.") in NON_NAME_OPENERS:
+            continue
         if looks_like_person_name(val) and (key_single or len(val.split()) >= 2):
             findings.append(_finding("PII.PersonName", _CATEGORY_PII, "Low", val, 0.85, match.start("val"), match.end("val"), masked=_mask_name(val), key=match.group("key")))
     return findings

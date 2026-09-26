@@ -596,6 +596,41 @@
           "location": "text"
         }
       ]
+    },
+    {
+      "id": "labelled_licence_reports_the_number",
+      "purpose": "The driver licence label never reports its own word 'number' as the value.",
+      "text": "Verified with a driver's license number of G577-7354-4; the user's driver license number is: 39-147784-4.",
+      "expected": [
+        {
+          "detector": "US_DRIVER_LICENSE",
+          "value": "G577-7354-4",
+          "location": "text"
+        },
+        {
+          "detector": "US_DRIVER_LICENSE",
+          "value": "39-147784-4",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "placeholder_phones_stay_silent",
+      "purpose": "Documented example numbers next to a phone keyword are not phones.",
+      "text": "Phone Number: (123) 456-7890. Phone: +44-800-123-456. Position 12.3456 7890123 logged.",
+      "expected": []
+    },
+    {
+      "id": "capitalised_openers_are_not_names",
+      "purpose": "Role labels followed by non-name words stay silent; thing-owned name labels too.",
+      "text": "Guarantor: Not Applicable. Customer: Sure, it's fine. Chemical name: Ethyl Acetate. Strategy Name: Optimizing Liquidity",
+      "expected": []
+    },
+    {
+      "id": "rate_table_is_not_coordinates",
+      "purpose": "A table of four-decimal pairs without a location keyword is not promoted to coordinates by count.",
+      "text": "USD, MXN, 19.5234, 20.3456; GBP, BRL, 6.4521, 6.7890; CAD, RUB, 0.1321, 0.1456; EUR, TRY, 0.1789, 0.1923; SGD, CNY, 1.5213, 1.6547; CHF, ZAR, 0.1123, 0.1234; JPY, PLN, 0.0312, 0.0345; AUD, SEK, 0.5123, 0.5432; NZD, NOK, 0.6123, 0.6321; HKD, DKK, 0.7123, 0.7321; INR, CZK, 0.8123, 0.8321",
+      "expected": []
     }
   ]
 }

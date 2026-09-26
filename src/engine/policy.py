@@ -180,7 +180,7 @@ POLICIES: Dict[str, DetectorPolicy] = {
     "IMEI": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, negative_fields=_TECHNICAL_NUMBER_FIELDS),
     "ICCID": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, negative_fields=_TECHNICAL_NUMBER_FIELDS),
     "VIN": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, count_promotion=False),
-    "GEO_COORDINATES": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False),
+    "GEO_COORDINATES": DetectorPolicy(context=CONTEXT_REQUIRED, identity=False, count_promotion=False),  # exchange-rate tables
     "PASSPORT_MRZ": DetectorPolicy(context=CONTEXT_NONE, identity_corroboration=False),
     "IN_IFSC": DetectorPolicy(context=CONTEXT_REQUIRED, column_ratio=0.8, count_promotion=False),
     "AU_BSB": DetectorPolicy(context=CONTEXT_REQUIRED, column_ratio=0.8, count_promotion=False),

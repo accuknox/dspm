@@ -30,12 +30,14 @@ def _hit(detector, start, end, confidence="likely", value=""):
 
 def test_scorer_counts_overlap_hits_wrong_types_and_tiers():
     text = "mail a@b.com ssn 219-09-9999 site http://x.io free 123-45-6789 company Acme"
-    record = Record("r1", text, [
-        ("email", 5, 12, "a@b.com"),          # target, hit by Email
-        ("ssn", 17, 28, "219-09-9999"),       # target, hit only by a Phone Number (wrong type)
-        ("url", 34, 45, "http://x.io"),       # ambiguous, URL hit is fine
-        ("company", 71, 75, "Acme"),          # unscored label
-    ], {})
+    record = Record(
+        "r1", text, [
+            ("email", 5, 12, "a@b.com"),          # target, hit by Email
+            ("ssn", 17, 28, "219-09-9999"),       # target, hit only by a Phone Number (wrong type)
+            ("url", 34, 45, "http://x.io"),       # ambiguous, URL hit is fine
+            ("company", 71, 75, "Acme"),          # unscored label
+        ], {},
+    )
     hits = [
         _hit("Email", 5, 12),
         _hit("Phone Number", 17, 28),

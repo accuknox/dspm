@@ -307,7 +307,7 @@ RULES: List[Rule] = [
                 r"\b([A-Z][0-9]{3,6}|[A-Z][0-9]{5,9}|[A-Z][0-9]{6,8}|[A-Z][0-9]{4,8}|[A-Z][0-9]{9,11}|[A-Z]{1,2}[0-9]{5,6}|H[0-9]{8}|V[0-9]{6}|X[0-9]{8}|A-Z]{2}[0-9]{2,5}|[A-Z]{2}[0-9]{3,7}|[0-9]{2}[A-Z]{3}[0-9]{5,6}|[A-Z][0-9]{13,14}|[A-Z][0-9]{18}|[A-Z][0-9]{6}R|[A-Z][0-9]{9}|[A-Z][0-9]{1,12}|[0-9]{9}[A-Z]|[A-Z]{2}[0-9]{6}[A-Z]|[0-9]{8}[A-Z]{2}|[0-9]{3}[A-Z]{2}[0-9]{4}|[A-Z][0-9][A-Z][0-9][A-Z]|[0-9]{7,8}[A-Z])\b",
                 0.3,
             ),
-            Pattern("Driver License (labelled)", r"\bdriver'?s?[ -]licen[cs]e(?: number| no\.?| #|#)?\s*[:#-]?\s*(?P<v>[A-Z0-9]{5,14})\b", 0.85),
+            Pattern("Driver License (labelled)", r"\bdriver'?s?[ -]licen[cs]e(?: number| no\.?| #|#)?(?: of| is)?\s*[:#(-]?\s*(?P<v>(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{4,15})(?![A-Z0-9])", 0.85),
             Pattern("Driver License - Digits (very weak)", r"\b([0-9]{6,14}|[0-9]{16})\b", 0.01),
         ],
         context=["driver", "license", "permit", "lic", "identification", "dls", "cdls", "lic#", "driving"],

@@ -81,10 +81,14 @@ GROUPS: Dict[str, Set[str]] = {
     "swift": {"SWIFT/BIC"},
     "ssn": {"US SSN"},
     "itin": {"US_ITIN", "US SSN"},
-    "passport": {"US_PASSPORT", "UK_PASSPORT", "PASSPORT_MRZ", "IN PASSPORT", "DE_PASSPORT", "ES_PASSPORT",
-                 "IT_PASSPORT", "FR_PASSPORT", "JP_PASSPORT", "KR_PASSPORT", "PH_PASSPORT", "ZA_PASSPORT"},
-    "driver": {"US_DRIVER_LICENSE", "UK_DRIVING_LICENCE", "IT_DRIVER_LICENSE", "KR_DRIVER_LICENSE",
-               "ZA_DRIVER_LICENSE", "DE_FUEHRERSCHEIN"},
+    "passport": {
+        "US_PASSPORT", "UK_PASSPORT", "PASSPORT_MRZ", "IN PASSPORT", "DE_PASSPORT", "ES_PASSPORT",
+        "IT_PASSPORT", "FR_PASSPORT", "JP_PASSPORT", "KR_PASSPORT", "PH_PASSPORT", "ZA_PASSPORT",
+    },
+    "driver": {
+        "US_DRIVER_LICENSE", "UK_DRIVING_LICENCE", "IT_DRIVER_LICENSE", "KR_DRIVER_LICENSE",
+        "ZA_DRIVER_LICENSE", "DE_FUEHRERSCHEIN",
+    },
     "ip": {"PII.IPAddress"},
     "mac": {"MAC_ADDRESS"},
     "imei": {"IMEI"},
@@ -95,8 +99,10 @@ GROUPS: Dict[str, Set[str]] = {
     "mrn": {"MEDICAL_RECORD_NUMBER"},
     "health_member": {"US_HEALTH_INSURANCE_MEMBER_ID", "US_MBI"},
     "vin": {"VIN"},
-    "plate": {"UK_VEHICLE_REGISTRATION", "TR_LICENSE_PLATE", "DE_KFZ", "ZA_LICENSE_PLATE",
-              "IN_VEHICLE_REGISTRATION", "NG_VEHICLE_REGISTRATION"},
+    "plate": {
+        "UK_VEHICLE_REGISTRATION", "TR_LICENSE_PLATE", "DE_KFZ", "ZA_LICENSE_PLATE",
+        "IN_VEHICLE_REGISTRATION", "NG_VEHICLE_REGISTRATION",
+    },
     "user": {"PII.UserIdentifier"},
     "postcode": {"UK_POSTCODE", "CA_POSTAL_CODE", "DE_PLZ", "Address"},
     "regional": set(REGIONAL_DETECTORS),
@@ -492,8 +498,10 @@ def score(records: List[Record], results: List[List[Dict[str, Any]]], spec: Dict
     f1 = (2 * precision * recall / (precision + recall)) if precision and recall else None
 
     def label_row(counters: Counter) -> Dict[str, Any]:
-        row = {"gold": counters["gold"], "tp": counters["tp"], "fn": counters["fn"],
-               "recall": round(counters["tp"] / counters["gold"], 3) if counters["gold"] else None}
+        row = {
+            "gold": counters["gold"], "tp": counters["tp"], "fn": counters["fn"],
+            "recall": round(counters["tp"] / counters["gold"], 3) if counters["gold"] else None,
+        }
         if counters["demo_domain_gold"]:
             row["demo_domain_gold"] = counters["demo_domain_gold"]
         if counters["gold_valid"] or counters["gold_invalid"]:
@@ -513,8 +521,10 @@ def score(records: List[Record], results: List[List[Dict[str, Any]]], spec: Dict
             "hits_on_unscored_spans": fp_kind["on_unscored_span"],
         },
         "per_label": {label: label_row(c) for label, c in sorted(per_label.items())},
-        "per_group": {group: {"gold": c["gold"], "recall": round(c["tp"] / c["gold"], 3) if c["gold"] else None}
-                      for group, c in sorted(per_group.items())},
+        "per_group": {
+            group: {"gold": c["gold"], "recall": round(c["tp"] / c["gold"], 3) if c["gold"] else None}
+            for group, c in sorted(per_group.items())
+        },
         "false_positives_by_detector": dict(fp_by_detector.most_common(20)),
         "unscored_label_spans": dict(unscored_labels.most_common()),
     }
@@ -546,11 +556,13 @@ def run(dataset: str, args, engine, config) -> Dict[str, Any]:
         suffix = "-json" if by_value else ""
         with (args.output_dir / f"{dataset}{suffix}-hits.jsonl").open("w", encoding="utf-8") as handle:
             for record, hits in zip(kept, results):
-                handle.write(json.dumps({
-                    "id": record.id, "meta": record.meta,
-                    "gold": [(label, start, end, value if by_value else "") for label, start, end, value in record.gold],
-                    "hits": [{k: h[k] for k in ("detector", "start", "end", "confidence", *(("value",) if by_value else ()))} for h in hits],
-                }) + "\n")
+                handle.write(
+                    json.dumps({
+                        "id": record.id, "meta": record.meta,
+                        "gold": [(label, start, end, value if by_value else "") for label, start, end, value in record.gold],
+                        "hits": [{k: h[k] for k in ("detector", "start", "end", "confidence", *(("value",) if by_value else ()))} for h in hits],
+                    }) + "\n",
+                )
 
     if args.show_misses:
         shown = 0
@@ -623,11 +635,13 @@ def summarize(output_dir: Path) -> Path:
         data = json.loads(path.read_text(encoding="utf-8"))
         if "tiers" in data:
             reports.append(data)
-    lines = ["# Public-dataset benchmark results", "",
-             "Engine: src/engine + src/pipeline, aggregation off, NER model per report. Matching: lenient span overlap "
-             "(value match in JSON-document mode). Precision counts accepted hits against false positives of kind no_gold and "
-             "wrong_type; recall is over target labels only. `recall_on_valid` is recall on gold values that pass their own "
-             "checksum, the fair column for LLM-generated numbers.", ""]
+    lines = [
+        "# Public-dataset benchmark results", "",
+        "Engine: src/engine + src/pipeline, aggregation off, NER model per report. Matching: lenient span overlap "
+        "(value match in JSON-document mode). Precision counts accepted hits against false positives of kind no_gold and "
+        "wrong_type; recall is over target labels only. `recall_on_valid` is recall on gold values that pass their own "
+        "checksum, the fair column for LLM-generated numbers.", "",
+    ]
     lines += markdown_summary(reports).splitlines()
     lines += ["", "## Runs", ""]
     for report in reports:
