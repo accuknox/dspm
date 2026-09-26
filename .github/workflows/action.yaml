@@ -1,24 +1,44 @@
-# Build and push DSPM image to ECR on tag or Release
+name: Build image and publish release info
+
+# Builds the multi-arch DSPM image and pushes it to ECR Public when a version tag is pushed or a
+# GitHub release is published, then writes the image tag, digest and build details into the notes
+# of that tag's release. A tag pushed without a release only builds; its notes are written when a
+# release for it is published later.
 on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+-*"
+  release:
+    types: [published]
 
 env:
   IMAGE_NAME: dspm
   ECR_REGISTRY: public.ecr.aws/k9v9d5v2
   AWS_REGION: us-east-1
 
+# Publishing a release from the GitHub UI with a new tag fires both `push` and `release` for that
+# tag. Queue the two runs so the second one reuses the image the first one pushed.
+concurrency:
+  group: dspm-image-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   build-and-push:
     name: Build and Push to ECR
     runs-on: ubuntu-latest
-    # only run on release or when a tag push happens
-    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
+    # Both triggers run with the tag as the ref; only version tags are built.
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
-      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      tag: ${{ steps.image.outputs.tag }}
+      tags: ${{ steps.image.outputs.tags }}
+      platforms: ${{ steps.image.outputs.platforms }}
+      digest: ${{ steps.digest.outputs.digest }}
+      manifests: ${{ steps.digest.outputs.manifests }}
+      built_at: ${{ steps.digest.outputs.built_at }}
 
     steps:
       - name: Checkout code
@@ -42,18 +62,175 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Resolve image name and tags
+        id: image
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          IMAGE="$ECR_REGISTRY/$IMAGE_NAME"
+          {
+            echo "image=$IMAGE"
+            echo "tag=$TAG"
+            # Every tag points at the same multi-arch index; the suffixed ones are kept as aliases.
+            echo "tags=$IMAGE:$TAG,$IMAGE:$TAG-amd64,$IMAGE:$TAG-arm64"
+            echo "platforms=linux/amd64,linux/arm64"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check for an image already built from this commit
+        id: existing
+        env:
+          REF: ${{ steps.image.outputs.image }}:${{ steps.image.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # The build step labels the image with its source commit (org.opencontainers.image.revision).
+          # If the registry already holds this tag built from the same commit, an earlier run of this
+          # workflow made it and it is reused. A moved tag or an unlabelled image is rebuilt.
+          found=false
+          if config="$(docker buildx imagetools inspect --format '{{json .Image}}' "$REF" 2>/dev/null)"; then
+            revisions="$(jq -r '[.. | objects | .Labels? // empty | .["org.opencontainers.image.revision"] // empty] | unique | join(",")' <<<"$config")"
+            if [ "$revisions" = "$GITHUB_SHA" ]; then
+              found=true
+              echo "::notice::$REF was already built from $GITHUB_SHA by an earlier run; reusing it."
+            else
+              echo "$REF exists but was built from '${revisions:-no revision label}'; rebuilding."
+            fi
+          else
+            echo "$REF is not in the registry yet; building."
+          fi
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image to ECR
+        id: build
+        if: steps.existing.outputs.found != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          # Tags: registry/image:tag and registry/image:latest (optional)
-          tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.image.outputs.tags }}
+          platforms: ${{ steps.image.outputs.platforms }}
+          # OCI labels; the revision is what the check above looks for.
+          labels: |
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.version=${{ steps.image.outputs.tag }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.created=${{ steps.image.outputs.built_at }}
           # GitHub Actions cache to speed up repeated builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Resolve image digest and per-platform manifests
+        id: digest
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+          TAG: ${{ steps.image.outputs.tag }}
+          BUILD_DIGEST: ${{ steps.build.outputs.digest }}
+          RUN_BUILT_AT: ${{ steps.image.outputs.built_at }}
+        run: |
+          set -euo pipefail
+          # Digest of the multi-arch index: from the build, or from the registry when the image was reused.
+          digest="${BUILD_DIGEST:-$(docker buildx imagetools inspect --format '{{json .Manifest}}' "$IMAGE:$TAG" | jq -r '.digest')}"
+          index="$(docker buildx imagetools inspect --format '{{json .Manifest}}' "$IMAGE@$digest")"
+          # Platform manifests only: BuildKit also attaches provenance attestations as unknown/unknown.
+          manifests="$(jq -c '[.manifests[]? | select(.platform.os != "unknown")
+            | {platform: ([.platform.os, .platform.architecture, .platform.variant // empty] | join("/")), digest}]' <<<"$index")"
+          # Build time recorded in the image itself, so a reused image reports when it was really built.
+          built_at="$(docker buildx imagetools inspect --format '{{json .Image}}' "$IMAGE@$digest" \
+            | jq -r '[.. | objects | .Labels? // empty | .["org.opencontainers.image.created"] // empty] | first // empty')"
+          {
+            echo "digest=$digest"
+            echo "manifests=$manifests"
+            echo "built_at=${built_at:-$RUN_BUILT_AT}"
+          } >> "$GITHUB_OUTPUT"
+          echo "$IMAGE:$TAG@$digest"
+          jq . <<<"$manifests"
+
+  update-release:
+    name: Add image info to the GitHub release
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    permissions:
+      contents: write
+    env:
+      IMAGE: ${{ needs.build-and-push.outputs.image }}
+      TAG: ${{ needs.build-and-push.outputs.tag }}
+      TAGS: ${{ needs.build-and-push.outputs.tags }}
+      PLATFORMS: ${{ needs.build-and-push.outputs.platforms }}
+      DIGEST: ${{ needs.build-and-push.outputs.digest }}
+      MANIFESTS: ${{ needs.build-and-push.outputs.manifests }}
+      BUILT_AT: ${{ needs.build-and-push.outputs.built_at }}
+
+    steps:
+      - name: Write the image details into the release notes
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { IMAGE, TAG, TAGS, PLATFORMS, DIGEST, MANIFESTS, BUILT_AT } = process.env;
+            const START = '<!-- dspm-image-info:start -->';
+            const END = '<!-- dspm-image-info:end -->';
+
+            // The release to annotate: the one that fired this run, or the one already published for
+            // a pushed tag. A tag without a release is fine: the `release` trigger runs this job again
+            // when a release for it is published.
+            let releaseId = context.payload.release?.id;
+            if (!releaseId) {
+              try {
+                releaseId = (await github.rest.repos.getReleaseByTag({ owner, repo, tag: TAG })).data.id;
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                core.notice(`No GitHub release for ${TAG} yet; the image info is added when one is published.`);
+                return;
+              }
+            }
+            // Re-read the notes right before writing so edits made in the meantime are kept.
+            const { data: release } = await github.rest.repos.getRelease({ owner, repo, release_id: releaseId });
+
+            const code = (text) => '`' + text + '`';
+            const manifests = JSON.parse(MANIFESTS || '[]');
+            const platforms = (manifests.length ? manifests.map((m) => m.platform) : PLATFORMS.split(',')).map(code).join(', ');
+            const aliases = TAGS.split(',').map((ref) => ref.slice(ref.lastIndexOf(':') + 1)).filter((t) => t !== TAG).map(code).join(', ');
+            const repoUrl = `${context.serverUrl}/${owner}/${repo}`;
+
+            const section = [
+              START,
+              '## Container image',
+              '',
+              `- **Image:** ${code(`${IMAGE}:${TAG}`)}`,
+              `- **Digest:** ${code(DIGEST)} (multi-arch index)`,
+              `- **Platforms:** ${platforms}`,
+              aliases ? `- **Also tagged:** ${aliases}` : null,
+              `- **Source commit:** [${code(context.sha.slice(0, 7))}](${repoUrl}/commit/${context.sha})`,
+              `- **Built:** ${BUILT_AT} ([workflow run](${repoUrl}/actions/runs/${context.runId}))`,
+              '',
+              ...(manifests.length ? [
+                '| Platform | Digest |',
+                '| --- | --- |',
+                ...manifests.map((m) => `| ${code(m.platform)} | ${code(m.digest)} |`),
+                '',
+              ] : []),
+              '```sh',
+              `docker pull ${IMAGE}:${TAG}`,
+              '# pinned to the immutable digest',
+              `docker pull ${IMAGE}@${DIGEST}`,
+              '```',
+              END,
+            ].filter((line) => line !== null).join('\n');
+
+            // Replace the section an earlier run wrote, or append it after the existing notes.
+            const body = release.body ?? '';
+            const start = body.indexOf(START);
+            const end = body.indexOf(END, start);
+            const updated = start !== -1 && end !== -1
+              ? body.slice(0, start) + section + body.slice(end + END.length)
+              : (body.trim() ? body.trimEnd() + '\n\n' : '') + section + '\n';
+            if (updated === body) {
+              core.info(`Release ${TAG} already lists ${IMAGE}:${TAG}@${DIGEST}; nothing to do.`);
+              return;
+            }
+            await github.rest.repos.updateRelease({ owner, repo, release_id: releaseId, body: updated });
+            core.notice(`Added ${IMAGE}:${TAG} (${DIGEST}) to the release notes: ${release.html_url}`);
+            await core.summary.addRaw(section.slice(START.length, -END.length)).write();
