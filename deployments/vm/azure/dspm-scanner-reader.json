@@ -1,0 +1,18 @@
+{
+  "Name": "DSPM Scanner Reader",
+  "IsCustom": true,
+  "Description": "Read-only data access for the DSPM scanner: list containers and read blobs. The built-in role Storage Blob Data Reader is equivalent plus user-delegation keys; use this one when the customer wants the minimum.",
+  "Actions": [
+    "Microsoft.Storage/storageAccounts/read",
+    "Microsoft.Storage/storageAccounts/blobServices/read",
+    "Microsoft.Storage/storageAccounts/blobServices/containers/read"
+  ],
+  "NotActions": [],
+  "DataActions": [
+    "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read"
+  ],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "/subscriptions/SUBSCRIPTION_ID"
+  ]
+}

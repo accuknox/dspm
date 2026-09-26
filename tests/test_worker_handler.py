@@ -21,6 +21,9 @@ _NEUTRAL_SETTINGS = {
     "DISABLED_DETECTORS": [], "ALLOW_LIST": [], "ALLOW_REGEX": [], "COLUMN_RATIO": None, "MIN_COUNT": None,
     "AGGREGATION_THRESHOLD": 25, "SAMPLE_LIMIT": 10000, "REPORT_PRIVATE_IPS": False, "REPORT_TOKEN_LIKE_VALUES": False,
     "MIN_CONFIDENCE": "likely", "ADAPTIVE_SAMPLING": False, "KEEP_SCANNED_FILES": False,
+    "AZURE_SUBSCRIPTION_ID": None, "AZURE_STORAGE_ACCOUNT": None, "AZURE_STORAGE_ENDPOINT_SUFFIX": None,
+    "AZURE_STORAGE_CONNECTION_STRING": None, "AZURE_STORAGE_SAS_TOKEN": None, "AZURE_STORAGE_ACCOUNT_KEY": None,
+    "AZURE_COSMOS_ENDPOINT": None, "AZURE_COSMOS_KEY": None, "DB_AUTH": "password",
 }
 
 
@@ -56,12 +59,23 @@ def _read_findings(findings_dir, name):
     return json.loads(files[0].read_text())
 
 
-def _fake_s3_scanner(files, scan_side_effect, errors=0):
+def _fake_object_store_scanner(files, scan_side_effect, errors=0, resource_id_fn=None):
+    """A stand-in S3Scanner / AzureBlobScanner: iter_scan yields (resource_id, key, findings) per listed object."""
     scanner = MagicMock()
-    scanner.stats = {"objects_scanned": len(files), "errors": errors}
-    scanner.list_all_files.return_value = files
-    scanner.scan.side_effect = scan_side_effect
+    scanner.stats = {"objects_scanned": len(files), "objects_skipped": 0, "errors": errors}
+    resource_id_fn = resource_id_fn or (lambda target, key: f"arn:aws:s3:::{target['bucket']}/{key}")
+
+    def iter_scan(target):
+        for file in files:
+            key = file["Key"]
+            object_target = {**target, "key": key, "version_id": file.get("VersionId"), "last_modified": file.get("LastModified")}
+            yield resource_id_fn(target, key), key, scan_side_effect(object_target)
+
+    scanner.iter_scan.side_effect = iter_scan
     return scanner
+
+
+_fake_s3_scanner = _fake_object_store_scanner
 
 
 def test_worker_db_scan_layout():
@@ -109,10 +123,8 @@ def test_worker_s3_scan_layout():
             "severity": "high", "value": "4111", "location": "Line 1, Column 1-19",
         }]
 
-    files = [
-        {"Key": "data.xlsx", "Size": 10}, {"Key": "clean.txt", "Size": 5}, {"Key": "cards.txt", "Size": 20},
-        {"Key": "huge.bin", "Size": 200 * 1024 * 1024}, {"Key": "empty.txt", "Size": 0},
-    ]
+    # (empty and oversized objects are skipped by S3Scanner.iter_scan itself, see tests/test_scanners.py)
+    files = [{"Key": "data.xlsx", "Size": 10}, {"Key": "clean.txt", "Size": 5}, {"Key": "cards.txt", "Size": 20}]
     scanner = _fake_s3_scanner(files, fake_scan)
     stack, findings_dir = _isolated(AWS_ACCOUNT_ID="123456789012")
     with stack, patch.object(handler.boto3, "client") as boto_client, patch.object(handler, "S3Scanner", return_value=scanner):
@@ -120,6 +132,7 @@ def test_worker_s3_scan_layout():
         doc = _read_findings(findings_dir, "my-bucket")
 
     assert boto_client.call_args.kwargs["region_name"] == "ap-south-1"
+    assert scanner.iter_scan.call_args.args[0] == {"bucket": "my-bucket"}
     assert result["status"] == "success" and result["files_scanned"] == 3
     # Same layout as the database case: one entry per scanned unit, clean ones with []
     assert set(doc["findings"]) == {"data.xlsx [Employees]", "clean.txt", "cards.txt"}
@@ -209,6 +222,10 @@ def test_worker_target_parsing_and_guards():
     stack, _ = _isolated(OBJECT_NAME="b1", OBJECT_TYPE="s3")
     with stack:
         assert handler.lambda_handler()["statusCode"] == 400
+    # AZURE_SUBSCRIPTION_ID likewise for Azure Blob targets
+    stack, _ = _isolated(OBJECT_NAME="uploads", OBJECT_TYPE="AZURE_BLOB")
+    with stack:
+        assert handler.lambda_handler()["statusCode"] == 400
     stack, _ = _isolated(OBJECT_NAME="thing", OBJECT_TYPE="ORACLE")
     with stack:
         response = handler.lambda_handler()
@@ -256,3 +273,105 @@ def test_env_settings_reach_the_scan_config():
             importlib.reload(settings)
     # defaults come back once the variables are unset
     assert settings.DISABLED_DETECTORS == [] and settings.COLUMN_RATIO is None and settings.MIN_CONFIDENCE == "likely"
+
+
+def test_worker_azure_blob_scan_layout():
+    def fake_scan(target):
+        key = target["key"]
+        rid = f"https://acct.blob.core.windows.net/{target['container']}/{key}"
+        if key.endswith(".xlsx"):
+            return [{
+                "resource_id": f"{rid} [Employees]", "detector": "Email", "category": "PII",
+                "severity": "medium", "value": "e@corp.com", "location": "Sheet 'Employees', Row 0, Column 'Contact'",
+            }]
+        if key == "clean.txt":
+            return []
+        return [{
+            "resource_id": rid, "detector": "Credit Card", "category": "Financial Data",
+            "severity": "high", "value": "4111", "location": "Line 1, Column 1-19",
+        }]
+
+    files = [{"Key": "data.xlsx", "Size": 10}, {"Key": "clean.txt", "Size": 5}, {"Key": "cards.txt", "Size": 20}]
+    scanner = _fake_object_store_scanner(
+        files, fake_scan, resource_id_fn=lambda target, key: f"https://acct.blob.core.windows.net/{target['container']}/{key}",
+    )
+    stack, findings_dir = _isolated(
+        AZURE_SUBSCRIPTION_ID="2f1c7e0a-0000-0000-0000-000000000000", AZURE_STORAGE_ACCOUNT="acct",
+        AZURE_STORAGE_SAS_TOKEN="sv=1&sig=x",
+    )
+    with stack, patch.object(handler, "AzureBlobScanner", return_value=scanner):
+        result = handler.process_bucket("uploads", "AZURE_BLOB")
+        doc = _read_findings(findings_dir, "uploads")
+
+    target = scanner.iter_scan.call_args.args[0]
+    assert target["account"] == "acct" and target["container"] == "uploads" and target["sas_token"] == "sv=1&sig=x"
+    assert result["status"] == "success" and result["files_scanned"] == 3
+    # Same layout as the S3 case: one entry per scanned unit, per sheet for workbooks, clean ones with []
+    assert set(doc["findings"]) == {"data.xlsx [Employees]", "clean.txt", "cards.txt"}
+    assert doc["findings"]["clean.txt"] == [] and doc["findings"]["cards.txt"][0]["name"] == "Credit Card"
+    assert doc["account_id"] == "2f1c7e0a-0000-0000-0000-000000000000" and doc["object_type"] == "AZURE_BLOB"
+
+    # account/container names and container URLs override AZURE_STORAGE_ACCOUNT
+    stack, findings_dir = _isolated(AZURE_SUBSCRIPTION_ID="sub", AZURE_STORAGE_ACCOUNT="acct")
+    with stack, patch.object(handler, "AzureBlobScanner", return_value=scanner):
+        handler.process_bucket("other/exports", "azure_blob")
+        doc = _read_findings(findings_dir, "other_exports")
+    target = scanner.iter_scan.call_args.args[0]
+    assert (target["account"], target["container"]) == ("other", "exports") and doc["object_name"] == "other/exports"
+    assert handler.split_azure_target("https://acct2.blob.core.windows.net/bucket") == ("https://acct2.blob.core.windows.net", "bucket")
+    assert handler.split_azure_target("http://127.0.0.1:10000/devstoreaccount1/bucket") == ("http://127.0.0.1:10000/devstoreaccount1", "bucket")
+
+    # scanner errors surface like the S3 ones, naming the failed blobs
+    scanner.stats = {
+        "objects_scanned": 0, "objects_skipped": 0, "errors": 1,
+        "error_details": ["https://acct.blob.core.windows.net/uploads/a.txt: 403"],
+    }
+    stack, _ = _isolated(AZURE_SUBSCRIPTION_ID="sub", AZURE_STORAGE_ACCOUNT="acct")
+    with stack, patch.object(handler, "AzureBlobScanner", return_value=scanner):
+        result = handler.process_bucket("uploads", "AZURE_BLOB")
+    assert result["errors"] == ["1 error(s) during Azure Blob scan: https://acct.blob.core.windows.net/uploads/a.txt: 403"]
+
+
+def test_worker_cosmos_and_azure_database_aliases():
+    # Cosmos DB for NoSQL: one entry per container, attributed to the subscription
+    cosmos = MagicMock()
+    cosmos.stats = {"containers_scanned": 2, "documents_scanned": 5, "errors": 0}
+    cosmos.iter_scan.return_value = [
+        (
+            "https://acct.documents.azure.com/appdb/users", "users", [{
+                "resource_id": "https://acct.documents.azure.com/appdb/users", "detector": "Email", "category": "PII",
+                "severity": "medium", "value": "e@corp.com", "location": "Database 'appdb', Container 'users', Field 'email' (3 matches)",
+            }],
+        ),
+        ("https://acct.documents.azure.com/appdb/audit", "audit", []),
+    ]
+    stack, findings_dir = _isolated(AZURE_SUBSCRIPTION_ID="sub", AZURE_COSMOS_ENDPOINT="acct", AZURE_COSMOS_KEY="k")
+    with stack, patch.object(handler, "CosmosNoSQLScanner", return_value=cosmos):
+        result = handler.process_bucket("appdb", "COSMOS_NOSQL")
+        doc = _read_findings(findings_dir, "appdb")
+    assert cosmos.iter_scan.call_args.args[0] == {"endpoint": "acct", "key": "k", "database": "appdb", "sample_limit": 10000}
+    assert result["status"] == "success" and set(doc["findings"]) == {"users", "audit"}
+    assert doc["findings"]["users"][0]["name"] == "Email" and doc["account_id"] == "sub"
+
+    # Azure database aliases route to the existing SQL / Mongo connectors; DB_AUTH reaches the target
+    sql = MagicMock()
+    sql.stats = {"tables_scanned": 0, "rows_scanned": 0, "errors": 0}
+    sql.iter_scan.return_value = []
+    stack, _ = _isolated(
+        DB_HOST="appdb.postgres.database.azure.com", DB_USERNAME="dspm-scanner-vm", DB_AUTH="azure_entra",
+        AZURE_SUBSCRIPTION_ID="sub",
+    )
+    with stack, patch.object(handler, "SQLScanner", return_value=sql):
+        result = handler.process_bucket("appdb", "AZURE_POSTGRES")
+    target = sql.iter_scan.call_args.args[0]
+    assert result["status"] == "success" and target["engine"] == "postgres" and target["auth"] == "azure_entra"
+    assert target["host"] == "appdb.postgres.database.azure.com"
+
+    mongo = MagicMock()
+    mongo.stats = {"collections_scanned": 0, "documents_scanned": 0, "errors": 0}
+    mongo.iter_scan.return_value = []
+    stack, _ = _isolated(DB_URI="mongodb://acct:key@acct.mongo.cosmos.azure.com:10255/?ssl=true")
+    with stack, patch.object(handler, "MongoScanner", return_value=mongo):
+        handler.process_bucket("crm", "COSMOS_MONGO")
+    target = mongo.iter_scan.call_args.args[0]
+    assert target["uri"].startswith("mongodb://") and target["host"] == "acct.mongo.cosmos.azure.com" and "auth" not in target

@@ -56,3 +56,16 @@ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0
 google-auth==2.57.0
 pyasn1==0.6.4
 pyasn1_modules==0.4.2
+
+# Azure connectors (src/scanners/azure): Blob Storage / ADLS Gen2 and Cosmos DB for NoSQL, plus the identity chain
+# (managed identity, service principal, AKS workload identity). dnspython lets pymongo resolve the mongodb+srv URIs
+# of Cosmos DB for MongoDB vCore. Versions match the tested virtualenv.
+azure-core==1.41.0
+azure-identity==1.25.3
+azure-storage-blob==12.30.3
+azure-cosmos==4.17.1
+msal==1.39.0
+msal-extensions==1.3.1
+PyJWT==2.15.0
+isodate==0.7.2
+dnspython==2.8.0

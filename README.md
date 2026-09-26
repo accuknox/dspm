@@ -2,7 +2,7 @@
 
 DSPM scanner: discovers sensitive data (PII, credentials & secrets, financial, healthcare, regional-compliance identifiers) in cloud data stores and posts findings to the CSPM backend.
 
-Supported connectors: **S3, PostgreSQL, MySQL, MariaDB, MSSQL, MongoDB/DocumentDB, DynamoDB, RDS/Aurora**.
+Supported connectors: **S3, Azure Blob Storage / ADLS Gen2, PostgreSQL, MySQL, MariaDB, MSSQL, MongoDB/DocumentDB, DynamoDB, RDS/Aurora, Azure Database for PostgreSQL / MySQL, Azure SQL, Cosmos DB (NoSQL and MongoDB APIs), Google Workspace (Drive), Salesforce**.
 
 ## Setup
 
@@ -22,7 +22,7 @@ There are two entry points:
    python -m src.dspm_scanner_worker_handler
    ```
 
-   Findings are written to `output/findings/<OBJECT_NAME>-<YYYY-MM-DD>.json` (one file per target) and uploaded as a zip archive to `CSPM_URL` if configured. The JSON has the same layout for buckets and databases: `findings` holds one entry per scanned object key, `schema.table` or collection (an empty list when it is clean), and `files_scanned` counts them. With `KEEP_SCANNED_FILES=true` the files the scanner downloaded or exported (S3 objects, Drive files, Salesforce attachments) are kept under `output/scanned/` as well, to check what the parsers actually saw; leave it off anywhere but a test run.
+   Findings are written to `output/findings/<OBJECT_NAME>-<YYYY-MM-DD>.json` (one file per target) and uploaded as a zip archive to `CSPM_URL` if configured. The JSON has the same layout for buckets and databases: `findings` holds one entry per scanned object key, `schema.table` or collection (an empty list when it is clean), and `files_scanned` counts them. With `KEEP_SCANNED_FILES=true` the files the scanner downloaded or exported (S3 objects, Azure blobs, Drive files, Salesforce attachments) are kept under `output/scanned/` as well, to check what the parsers actually saw; leave it off anywhere but a test run.
 
 2. **Master** (`src/dspm_scanner_master_handler.py`) — AWS Lambda handler that scans one target per invocation payload (also accepts SQS-wrapped payloads, S3 event notifications, and DynamoDB Stream batches).
 
@@ -35,7 +35,7 @@ There are two entry points:
 | Variable | Required | Description |
 |---|---|---|
 | `OBJECT_TYPE` | yes* | Selects the connector, see sections below |
-| `OBJECT_NAME` | yes* | S3 bucket name, or database name for the DB connectors |
+| `OBJECT_NAME` | yes* | S3 bucket name, Azure Blob container, or database name for the DB connectors |
 | `OBJECTS_TO_SCAN` | no | Several targets at once: a JSON object `{"name": "type", ...}` (e.g. `{"bucket-a": "s3", "appdb": "postgres"}`) or a JSON list of names that all use `OBJECT_TYPE`. Overrides `OBJECT_NAME`/`OBJECT_TYPE` (\* not needed when set) |
 | `CSPM_URL` | no | CSPM backend base URL; findings upload is skipped when unset |
 | `ARTIFACT_TOKEN` | with `CSPM_URL` | Bearer token for the findings upload (`api/v1/artifact/`) |
@@ -69,6 +69,20 @@ There are two entry points:
 
 Objects larger than 100 MB are skipped. Archives (`.zip/.tar/.gz/.bz2`) are unpacked and scanned recursively; CSV/TSV, Parquet, Excel, JSON, XML, PDF, DOCX and images (OCR) have dedicated parsers, everything else falls back to plain-text scanning.
 
+### Azure Blob Storage / ADLS Gen2
+
+| Variable | Required | Description |
+|---|---|---|
+| `OBJECT_TYPE` | yes | `AZURE_BLOB` (or `ADLS`, `AZURE_STORAGE`) |
+| `OBJECT_NAME` | yes | Container name; `account/container` or the container URL when the identity reads several accounts |
+| `AZURE_STORAGE_ACCOUNT` | yes* | Storage account of the container(s): the account name or its `https://` URL (\* unless every name carries its account) |
+| `AZURE_SUBSCRIPTION_ID` | yes | Subscription that owns the account; recorded in the findings as `account_id` and required by the CSPM backend |
+| `AZURE_STORAGE_ENDPOINT_SUFFIX` | no | `core.windows.net` (default), `core.usgovcloudapi.net`, `core.chinacloudapi.cn` |
+| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET` | no | A service principal (app registration). Leave unset to use the VM's managed identity or AKS workload identity; a bare `AZURE_CLIENT_ID` selects a user-assigned managed identity. Creating the registration and the roles it needs: `deployments/vm/azure/README.md` |
+| `AZURE_STORAGE_SAS_TOKEN` / `AZURE_STORAGE_CONNECTION_STRING` / `AZURE_STORAGE_ACCOUNT_KEY` | no | Credential fallbacks when no identity is available, tried in that order before the identity chain; a read + list SAS is the safe one |
+
+The identity needs the role **Storage Blob Data Reader** on the account (or its resource group) and a network path: the storage firewall allowing the scanner's subnet, or a private endpoint (`deployments/vm/azure/`). The S3 rules apply: blobs over 100 MB are skipped, archives are unpacked and scanned recursively, workbooks yield one entry per sheet. Directory placeholders of hierarchical (ADLS Gen2) accounts, archive-tier blobs (they need rehydration first), page blobs and soft-deleted blobs are skipped and counted in the scanner stats. Resource ids are blob URLs (`https://<account>.blob.core.windows.net/<container>/<blob>`) and never carry a SAS token; a blob that could not be downloaded is reported in `errors`, not recorded as clean.
+
 ### PostgreSQL / MySQL / MariaDB / MSSQL
 
 | Variable | Required | Description |
@@ -100,6 +114,31 @@ All non-`system.*` collections of the database are discovered and scanned, up to
 > Reaching a replica set through `kubectl port-forward` / an SSH tunnel: the members advertise cluster-internal hostnames (`…rs0-0.…svc.cluster.local`) that do not resolve locally, so topology discovery fails with *Could not reach any servers*. The scanner adds `directConnection=true` automatically when `DB_HOST` is `localhost`/`127.0.0.1`; with `DB_URI`, append `?directConnection=true` yourself.
 
 > DynamoDB is currently only available through the master handler, not through worker mode.
+
+### Azure Database for PostgreSQL / MySQL, Azure SQL, Cosmos DB for MongoDB
+
+Ordinary wire-protocol databases to the scanner: the SQL and MongoDB connectors above behind an Azure `OBJECT_TYPE` alias, so the CSPM can tell the platform apart. Same `DB_*` variables, one instance per server.
+
+| Service | `OBJECT_TYPE` | Connection |
+|---|---|---|
+| Azure Database for PostgreSQL Flexible Server | `AZURE_POSTGRES` | `DB_HOST=<server>.postgres.database.azure.com`, port 5432. psycopg2 negotiates the TLS the server requires; pin the CA with `DB_URI=postgresql+psycopg2://…?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca-certificates.crt` |
+| Azure Database for MySQL Flexible Server | `AZURE_MYSQL` | Port 3306. PyMySQL negotiates TLS by itself; for `*.mysql.database.azure.com` hosts the scanner also verifies the server certificate against the system CA bundle (a `DB_URI` with its own `ssl_ca=` is left alone) |
+| Azure SQL Database / Managed Instance | `AZURE_SQL` | `DB_HOST=<server>.database.windows.net`, port 1433, a contained user in `db_datareader`. SQL logins only: pymssql cannot present Entra tokens |
+| Cosmos DB for MongoDB, RU or vCore | `COSMOS_MONGO` | `DB_URI` = the account's read-only connection string (RU, port 10255) or the vCore `mongodb+srv://` URI. Request-rate throttling (error 16500) is retried from the last document read, honouring the server's `RetryAfterMs` |
+
+**Without passwords.** `DB_AUTH=azure_entra` makes the scanner identity's Microsoft Entra access token the password of every connection to a Flexible Server (PostgreSQL and MySQL). `DB_USERNAME` is the identity's name on the server, created by the server's Entra administrator, on PostgreSQL: `SELECT * FROM pgaadauth_create_principal('dspm-scanner-vm', false, false); GRANT pg_read_all_data TO "dspm-scanner-vm";`. Tokens last about an hour and are fetched per connection, so long scans keep working.
+
+### Cosmos DB for NoSQL
+
+| Variable | Required | Description |
+|---|---|---|
+| `OBJECT_TYPE` | yes | `COSMOS_NOSQL` (or `COSMOS`, `AZURE_COSMOS`) |
+| `OBJECT_NAME` | yes | Database name to scan |
+| `AZURE_COSMOS_ENDPOINT` | yes | `https://<account>.documents.azure.com:443/`, or just the account name |
+| `AZURE_COSMOS_KEY` | no | The account's read-only key. Leave unset to use the identity chain with the data-plane role **Cosmos DB Built-in Data Reader**, assigned with `az cosmosdb sql role assignment create` (the portal's IAM blade cannot grant data-plane roles) |
+| `AZURE_SUBSCRIPTION_ID` | no | Recorded in the findings as `account_id` |
+
+Every container of the database is scanned, up to `SAMPLE_LIMIT` items each (`SELECT TOP n * FROM c`); the Cosmos system properties `_rid`, `_self`, `_etag`, `_attachments`, `_ts` are dropped before classification and items are walked recursively with dotted paths like MongoDB documents. The NoSQL API has no server-side random sample, so `SAMPLE_STRATEGY=random` reads the head. Request-rate limits (429) are retried by the SDK. Resource ids are `https://<account>.documents.azure.com/<database>/<container>`.
 
 ### Google Workspace (Drive)
 
@@ -165,7 +204,7 @@ Invocation payload shape:
 | `version_id` | no | Specific object version |
 | `last_modified` | no | With `config.last_scan_time`, enables skip-if-unchanged |
 
-### `scan_type: "postgres" | "postgresql" | "mysql" | "mariadb" | "mssql" | "sqlserver"`
+### `scan_type: "postgres" | "postgresql" | "mysql" | "mariadb" | "mssql" | "sqlserver" | "azure_postgres" | "azure_mysql" | "azure_sql"`
 
 | Target field | Required | Description |
 |---|---|---|
@@ -173,7 +212,8 @@ Invocation payload shape:
 | `username`, `password` | yes* | Credentials |
 | `database` | yes* | Database name |
 | `connection_string` | no | Full SQLAlchemy DSN; overrides the fields above (\*) |
-| `password_secret` | no | AWS Secrets Manager ARN/name; fills any missing `username/password/host/port/database/uri` |
+| `password_secret` | no | AWS Secrets Manager ARN/name, or an Azure Key Vault secret URI (`https://<vault>.vault.azure.net/secrets/<name>`, read with the scanner identity); fills any missing `username/password/host/port/database/uri` |
+| `auth` | no | `azure_entra`: the scanner identity's token is the password (Azure Database for PostgreSQL / MySQL Flexible Server) |
 | `schema` | no | Restrict to one schema (default: all non-system schemas) |
 | `tables` | no | Restrict to specific tables, plain or schema-qualified: `["users", "sales.orders"]` |
 | `include_views` | no | Also scan views (default `false`) |
@@ -191,14 +231,14 @@ Same fields as the SQL engines above (set `engine` to one of `postgres/mysql/mar
 | `reader_endpoint` | no | Aurora reader endpoint |
 | `use_reader` | no | Route the scan to `reader_endpoint` |
 
-### `scan_type: "mongo" | "mongodb" | "documentdb"`
+### `scan_type: "mongo" | "mongodb" | "documentdb" | "cosmos_mongo"`
 
 | Target field | Required | Description |
 |---|---|---|
 | `host`, `port` | yes* | MongoDB endpoint (port defaults to 27017) |
 | `username`, `password` | no* | Omit for unauthenticated instances |
 | `uri` | no | Full MongoDB URI; overrides the fields above (\*) |
-| `password_secret` | no | AWS Secrets Manager ARN/name, as for SQL |
+| `password_secret` | no | AWS Secrets Manager ARN/name or Key Vault secret URI, as for SQL |
 | `database` | no | Restrict to one database (default: all non-system databases) |
 | `collection` | no | Restrict to one collection (default: all non-`system.*` collections) |
 | `incremental_field` | no | Field for incremental scans, with `last_scan_time` |
@@ -214,6 +254,31 @@ Same fields as the SQL engines above (set `engine` to one of `postgres/mysql/mar
 | `sample_limit` | no | Max items (default 10000) |
 
 Uses ambient AWS credentials (Lambda role / environment). DynamoDB Stream CDC batches are handled automatically when the Lambda is wired to a stream.
+
+### `scan_type: "azure_blob" | "adls"`
+
+| Target field | Required | Description |
+|---|---|---|
+| `account` | yes* | Storage account name or URL (\* default `AZURE_STORAGE_ACCOUNT`) |
+| `container` | yes | Container name |
+| `blob` | no | One blob; omit to scan the container (`prefix` restricts it to a virtual directory) |
+| `version_id`, `snapshot` | no | With `blob` |
+| `last_scan_time` | no | Skip blobs not modified since (ISO 8601) |
+| `max_blobs` | no | Cap on blobs listed per run |
+| `connection_string`, `sas_token`, `account_key`, `endpoint_suffix` | no | Credential / endpoint overrides; `password_secret` may supply them from Key Vault or Secrets Manager |
+
+Without overrides the identity chain is used (service principal from `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_CLIENT_SECRET`, workload identity, managed identity), as in worker mode.
+
+### `scan_type: "cosmos" | "cosmos_nosql"`
+
+| Target field | Required | Description |
+|---|---|---|
+| `endpoint` or `account` | yes* | Account URL or name (\* default `AZURE_COSMOS_ENDPOINT`) |
+| `key` | no | Read-only key; omit for the identity chain (default `AZURE_COSMOS_KEY`) |
+| `database`, `container` | no | Restrict to one database / container (default: all) |
+| `last_scan_time` | no | Only items whose `_ts` is after it |
+| `sample_limit` | no | Max items per container (default 10000) |
+| `password_secret` | no | Key Vault secret URI or Secrets Manager ARN supplying `key` / `endpoint` |
 
 ### `scan_type: "google_workspace" | "gdrive" | "google_drive"`
 
@@ -250,7 +315,7 @@ Uses ambient AWS credentials (Lambda role / environment). DynamoDB Stream CDC ba
 }
 ```
 
-Like the database targets, `password_secret` (an AWS Secrets Manager ARN) can supply `consumer_key` / `consumer_secret` / `domain` - or a ready `access_token` + `instance_url` - instead of inline values.
+Like the database targets, `password_secret` (an AWS Secrets Manager ARN or an Azure Key Vault secret URI) can supply `consumer_key` / `consumer_secret` / `domain` - or a ready `access_token` + `instance_url` - instead of inline values.
 
 ### `config` keys (all scan types)
 

@@ -1,0 +1,102 @@
+# DSPM scanner as an AKS CronJob with workload identity: the pod gets a federated token for a
+# user-assigned managed identity and the scanner's DefaultAzureCredential uses it. No key in the cluster.
+#
+#   az identity create -g <rg> -n dspm-scanner
+#   az identity federated-credential create -g <rg> --identity-name dspm-scanner -n dspm-scanner \
+#       --issuer "$(az aks show -g <rg> -n <cluster> --query oidcIssuerProfile.issuerUrl -o tsv)" \
+#       --subject system:serviceaccount:<namespace>:dspm-scanner --audiences api://AzureADTokenExchange
+#   PRINCIPAL_ID=$(az identity show -g <rg> -n dspm-scanner --query principalId -o tsv) \
+#       ../vm/azure/grant-access.sh --storage-account <rg>/<account>
+#   kubectl apply -f deployments/kubernetes/cronjob-aks.yaml -n <namespace>
+#
+# The cluster needs --enable-oidc-issuer --enable-workload-identity. Fill in the client id, the tenant id,
+# the targets and the CSPM values before applying.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dspm-scanner
+  annotations:
+    azure.workload.identity/client-id: "00000000-0000-0000-0000-000000000000"   # the managed identity's client id
+    azure.workload.identity/tenant-id: "00000000-0000-0000-0000-000000000000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dspm-scanner-credentials
+type: Opaque
+stringData:
+  ARTIFACT_TOKEN: ""         # CSPM upload token
+  # DB_PASSWORD: ""          # only for database instances without DB_AUTH=azure_entra
+  # AZURE_COSMOS_KEY: ""     # only without the Cosmos data-plane reader role
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dspm-scanner
+spec:
+  schedule: "0 2 * * *"                  # daily at 02:00
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            azure.workload.identity/use: "true"   # the webhook injects the federated token
+        spec:
+          serviceAccountName: dspm-scanner
+          restartPolicy: Never
+          containers:
+            - name: dspm-scanner
+              image: public.ecr.aws/k9v9d5v2/dspm:v0.1.0-alpha.1   # tag from release.txt; mirror into ACR when egress is restricted
+              envFrom:
+                - secretRef:
+                    name: dspm-scanner-credentials
+              env:
+                - name: OBJECT_TYPE
+                  value: "AZURE_BLOB"               # AZURE_BLOB|COSMOS_NOSQL|AZURE_POSTGRES|AZURE_MYSQL|AZURE_SQL|COSMOS_MONGO
+                - name: OBJECTS_TO_SCAN
+                  value: '["uploads", "exports"]'
+                - name: AZURE_STORAGE_ACCOUNT
+                  value: "paymentsprod"
+                - name: AZURE_SUBSCRIPTION_ID
+                  value: "00000000-0000-0000-0000-000000000000"
+                - name: CSPM_URL
+                  value: "https://cspm.example.com/"
+                - name: LABEL_ID
+                  value: "eastus-aks-blob-paymentsprod"
+                - name: ENABLED_REGIONS
+                  value: "US,IN,GB"
+                - name: NER_MODEL
+                  value: "en_core_web_sm"           # en_core_web_trf needs ~3 GB per scan process
+                - name: OUTPUT_DIR
+                  value: "/output"
+              volumeMounts:
+                - name: output
+                  mountPath: /output
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                capabilities:
+                  drop: ["ALL"]
+                seccompProfile:
+                  type: RuntimeDefault
+          volumes:
+            - name: output
+              emptyDir: {}
+            - name: tmp
+              emptyDir:
+                sizeLimit: 4Gi

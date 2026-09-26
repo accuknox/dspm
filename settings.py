@@ -68,8 +68,8 @@ OBJECT_TYPE = os.environ.get("OBJECT_TYPE", None)
 OBJECT_NAME = os.environ.get("OBJECT_NAME", None)
 OBJECT_REGION = os.environ.get("OBJECT_REGION", None)  # AWS region for the S3 client
 
-# Database scan settings (used when OBJECT_TYPE is MONGODB|POSTGRES|MYSQL|MARIADB|MSSQL;
-# OBJECT_NAME holds the database name to scan)
+# Database scan settings (used when OBJECT_TYPE is MONGODB|POSTGRES|MYSQL|MARIADB|MSSQL or one of the Azure
+# aliases below; OBJECT_NAME holds the database name to scan)
 DB_URI = os.environ.get("DB_URI", None)  # full connection string/URI, overrides the fields below
 DB_HOST = os.environ.get("DB_HOST", None)
 DB_PORT = os.environ.get("DB_PORT", None)
@@ -86,6 +86,23 @@ SF_CONSUMER_SECRET = os.environ.get("SF_CONSUMER_SECRET", None)
 SF_API_VERSION = os.environ.get("SF_API_VERSION", None)  # default v62.0
 SF_OBJECTS = _list_env("SF_OBJECTS")  # pin the sObjects to scan; empty = all queryable business objects with records
 SF_INCLUDE_FILES = _bool_env("SF_INCLUDE_FILES", "true")  # also scan ContentVersion/Attachment file bodies
+
+# Azure (used when OBJECT_TYPE is AZURE_BLOB | COSMOS_NOSQL, and by the Azure database aliases AZURE_POSTGRES |
+# AZURE_MYSQL | AZURE_SQL | COSMOS_MONGO). Identity comes from azure-identity's DefaultAzureCredential: a service
+# principal (AZURE_CLIENT_ID + AZURE_TENANT_ID + AZURE_CLIENT_SECRET), AKS workload identity, or the VM's managed
+# identity (a bare AZURE_CLIENT_ID selects a user-assigned one); those variables are read by the SDK itself.
+AZURE_SUBSCRIPTION_ID = os.environ.get("AZURE_SUBSCRIPTION_ID", None)  # required for Azure Blob targets; recorded in the findings as account_id
+AZURE_STORAGE_ACCOUNT = os.environ.get("AZURE_STORAGE_ACCOUNT", None)  # account of the container targets (OBJECTS_TO_SCAN may also name account/container)
+AZURE_STORAGE_ENDPOINT_SUFFIX = os.environ.get("AZURE_STORAGE_ENDPOINT_SUFFIX", None)  # core.windows.net (default) | core.usgovcloudapi.net | core.chinacloudapi.cn
+# Credential fallbacks when no identity is available; leave all three empty to use the identity chain (recommended)
+AZURE_STORAGE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", None)  # also UseDevelopmentStorage=true for a local Azurite
+AZURE_STORAGE_SAS_TOKEN = os.environ.get("AZURE_STORAGE_SAS_TOKEN", None)  # read + list SAS, read-only by construction
+AZURE_STORAGE_ACCOUNT_KEY = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY", None)  # full access, discouraged
+AZURE_COSMOS_ENDPOINT = os.environ.get("AZURE_COSMOS_ENDPOINT", None)  # https://<account>.documents.azure.com:443/ or just the account name
+AZURE_COSMOS_KEY = os.environ.get("AZURE_COSMOS_KEY", None)  # the read-only key; leave empty for Entra RBAC (role "Cosmos DB Built-in Data Reader")
+# password (default): DB_PASSWORD / DB_URI. azure_entra: the scanner identity's access token is the password of every
+# connection to Azure Database for PostgreSQL / MySQL Flexible Server (DB_USERNAME is the identity's name on the server).
+DB_AUTH = (os.environ.get("DB_AUTH", "") or "password").strip().lower()
 
 # Scanner behaviour (see .env.example for the recommended values and README "Classification")
 LOG_QUERIES = True  # every query issued during DB scans is logged

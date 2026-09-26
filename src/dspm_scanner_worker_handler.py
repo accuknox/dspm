@@ -1,12 +1,11 @@
 import json
-import os
 import sys
 import time
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlsplit
 
 import boto3
@@ -17,6 +16,8 @@ from src.engine.confidence import max_tier
 from src.engine.detector import DetectionEngine
 from src.scanners.aws.ddb import DynamoDBScanner
 from src.scanners.aws.s3 import S3Scanner
+from src.scanners.azure.blob import AzureBlobScanner
+from src.scanners.azure.cosmos import CosmosNoSQLScanner
 from src.scanners.db.mongo import MongoScanner
 from src.scanners.db.sql import SQLScanner
 from src.scanners.saas.gdrive import GoogleDriveScanner
@@ -36,7 +37,12 @@ FINDINGS_DIR = OUTPUT_DIR / "findings"
 # OBJECT_TYPE values accepted for S3 buckets
 S3_OBJECT_TYPES = {"S3", "S3BUCKET"}
 
-# OBJECT_TYPE values -> canonical engine name for database scans
+# OBJECT_TYPE values accepted for Azure Blob Storage / ADLS Gen2 containers
+AZURE_BLOB_OBJECT_TYPES = {"AZURE_BLOB", "AZURE_BLOB_STORAGE", "AZUREBLOB", "BLOB", "ADLS", "ADLS_GEN2", "AZURE_STORAGE"}
+
+# OBJECT_TYPE values -> canonical engine name for database scans. The Azure-managed engines
+# (Azure Database for PostgreSQL / MySQL Flexible Server, Azure SQL, Cosmos DB for MongoDB) are
+# ordinary wire-protocol databases to the scanner, so they alias the existing connectors.
 DB_OBJECT_TYPES = {
     "MONGO": "mongo",
     "MONGODB": "mongo",
@@ -47,7 +53,19 @@ DB_OBJECT_TYPES = {
     "MARIADB": "mariadb",
     "MSSQL": "mssql",
     "SQLSERVER": "mssql",
+    "AZURE_POSTGRES": "postgres",
+    "AZURE_POSTGRESQL": "postgres",
+    "AZURE_MYSQL": "mysql",
+    "AZURE_SQL": "mssql",
+    "AZURE_MSSQL": "mssql",
+    "AZURE_SQL_DATABASE": "mssql",
+    "COSMOS_MONGO": "mongo",
+    "COSMOSDB_MONGO": "mongo",
+    "AZURE_COSMOS_MONGO": "mongo",
 }
+
+# OBJECT_TYPE values accepted for Cosmos DB for NoSQL databases
+COSMOS_OBJECT_TYPES = {"COSMOS_NOSQL", "COSMOSDB_NOSQL", "COSMOS", "COSMOSDB", "AZURE_COSMOS", "AZURE_COSMOS_NOSQL"}
 
 # OBJECT_TYPE values -> canonical connector for SaaS scans
 SAAS_OBJECT_TYPES = {
@@ -200,9 +218,91 @@ def scan_config() -> Dict[str, Any]:
     return config
 
 
+# ---------------------------------------------------------------------------- target helpers
+def is_azure_type(normalized_type: str) -> bool:
+    return (
+        normalized_type in AZURE_BLOB_OBJECT_TYPES
+        or normalized_type in COSMOS_OBJECT_TYPES
+        or normalized_type.startswith(("AZURE_", "COSMOS"))
+    )
+
+
+def account_id_for(normalized_type: str) -> Optional[str]:
+    """The cloud account the findings are attributed to: the Azure subscription for Azure targets, else the AWS account."""
+    return settings.AZURE_SUBSCRIPTION_ID if is_azure_type(normalized_type) else settings.AWS_ACCOUNT_ID
+
+
+def split_azure_target(name: str) -> Tuple[Optional[str], str]:
+    """
+    An Azure Blob target name -> (account, container). Accepted forms: 'container' (the
+    account comes from AZURE_STORAGE_ACCOUNT), 'account/container', or a container URL
+    such as https://acct.blob.core.windows.net/container (also Azurite's
+    http://127.0.0.1:10000/devstoreaccount1/container).
+    """
+    if "://" in name:
+        parts = urlsplit(name)
+        segments = [s for s in parts.path.split("/") if s]
+        if ".blob." not in (parts.hostname or "") and len(segments) >= 2:
+            return f"{parts.scheme}://{parts.netloc}/{segments[0]}", segments[1]
+        return f"{parts.scheme}://{parts.netloc}", segments[0] if segments else ""
+    if "/" in name:
+        account, container = name.split("/", 1)
+        return account or settings.AZURE_STORAGE_ACCOUNT, container.strip("/")
+    return settings.AZURE_STORAGE_ACCOUNT, name
+
+
+# ---------------------------------------------------------------------------- findings file helpers
+def _checkpoint(final_json: Dict[str, Any], findings_file: Path) -> None:
+    """Rewrites the findings JSON so a run stopped midway leaves a readable partial file."""
+    with findings_file.open("w") as f:
+        json.dump(final_json, f, indent=4, default=str)
+
+
+def _record_unit(final_json: Dict[str, Any], findings_file: Path, unit_name: str, findings: List[Dict[str, Any]]) -> None:
+    """One entry per scanned unit (table, collection, container, Drive file...), clean ones included with []."""
+    final_json["findings"][unit_name] = club_findings(findings)
+    final_json["files_scanned"] += 1
+    _checkpoint(final_json, findings_file)
+
+
+def record_object_findings(
+    final_json: Dict[str, Any], findings_file: Path, object_key: str, base_resource_id: str,
+    raw_findings: List[Dict[str, Any]],
+) -> None:
+    """
+    One entry per parser unit of an object-store object: a workbook yields one entry per
+    sheet ("report.xlsx [Employees]", the sheet suffix the parsers append to the object's
+    resource id), everything else one entry per object; clean objects are recorded with [].
+    Shared by the S3 and Azure Blob loops.
+    """
+    entries: Dict[str, List[Dict[str, Any]]] = {}
+    for finding in raw_findings:
+        resource_id = str(finding.get("resource_id", ""))
+        suffix = resource_id[len(base_resource_id):] if base_resource_id and resource_id.startswith(base_resource_id) else ""
+        entry = f"{object_key}{suffix}" if suffix.startswith(" [") and suffix.endswith("]") else object_key
+        entries.setdefault(entry, []).append(finding)
+    if not entries:
+        entries[object_key] = []
+    for entry, entry_findings in entries.items():
+        final_json["findings"][entry] = club_findings(entry_findings)
+    final_json["files_scanned"] += 1
+    _checkpoint(final_json, findings_file)
+
+
+def _scan_errors(scanner: Any, label: str) -> Optional[str]:
+    """The error summary line for a finished scanner, naming the failed units when it recorded them."""
+    count = scanner.stats.get("errors", 0)
+    if not count:
+        return None
+    details = scanner.stats.get("error_details") or []
+    suffix = ": " + "; ".join(details[:10]) if details else ", see logs"
+    return f"{count} error(s) during {label} scan{suffix}"
+
+
 def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str = None) -> Dict[str, Any]:
     """
-    Process scan for a single bucket/target (an S3 bucket or a database).
+    Process scan for a single target: an S3 bucket, an Azure Blob container, a database
+    (including Cosmos DB) or a SaaS tenant.
     """
     logger.info(f"Starting scan for object: {bucket_name} (type: {object_type})")
 
@@ -219,88 +319,61 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
     start_time = datetime.now()
 
     engine = DetectionEngine(config=config)
-    findings_file = FINDINGS_DIR / f"{bucket_name}-{scan_date}.json"
+    findings_file = FINDINGS_DIR / f"{bucket_name.replace('/', '_')}-{scan_date}.json"
+
+    normalized_type = str(object_type or "").upper()
 
     final_json = {
         "scan_time": start_time,
         "files_scanned": 0,
         "object_type": object_type,
         "object_name": bucket_name,
-        "account_id": settings.AWS_ACCOUNT_ID,
+        "account_id": account_id_for(normalized_type),
         "time_taken": None,
         "findings": {},
     }
 
-    normalized_type = str(object_type or "").upper()
-
-    if normalized_type in S3_OBJECT_TYPES:
+    if normalized_type in S3_OBJECT_TYPES or normalized_type in AZURE_BLOB_OBJECT_TYPES:
+        label = "S3" if normalized_type in S3_OBJECT_TYPES else "Azure Blob"
         try:
-            logger.info(f"Creating S3 Client instance for {bucket_name}")
-            # Static keys if provided; falls back to instance profile / IRSA when unset
-            client_kwargs = {
-                "aws_secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
-                "aws_access_key_id": settings.AWS_ACCESS_KEY_ID,
-                "service_name": "s3",
-            }
-            if object_region:
-                client_kwargs["region_name"] = object_region
+            if normalized_type in S3_OBJECT_TYPES:
+                logger.info(f"Creating S3 Client instance for {bucket_name}")
+                # Static keys if provided; falls back to instance profile / IRSA when unset
+                client_kwargs = {
+                    "aws_secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
+                    "aws_access_key_id": settings.AWS_ACCESS_KEY_ID,
+                    "service_name": "s3",
+                }
+                if object_region:
+                    client_kwargs["region_name"] = object_region
 
-            s3_client = boto3.client(**client_kwargs)
-            s3scanner = S3Scanner(engine, config, s3_client)
+                s3_client = boto3.client(**client_kwargs)
+                store_scanner = S3Scanner(engine, config, s3_client)
+                target = {"bucket": bucket_name}
+            else:
+                account, container = split_azure_target(bucket_name)
+                logger.info(f"Creating Azure Blob scanner instance for {account}/{container}")
+                # Credentials: the identity chain unless a connection string / SAS / key is configured
+                target = {
+                    "account": account,
+                    "container": container,
+                    "endpoint_suffix": settings.AZURE_STORAGE_ENDPOINT_SUFFIX,
+                    "connection_string": settings.AZURE_STORAGE_CONNECTION_STRING,
+                    "sas_token": settings.AZURE_STORAGE_SAS_TOKEN,
+                    "account_key": settings.AZURE_STORAGE_ACCOUNT_KEY,
+                }
+                store_scanner = AzureBlobScanner(engine, config)
 
-            files = s3scanner.list_all_files(bucket=bucket_name)
+            # One entry per object (per sheet for workbooks), clean ones included, checkpointed after each
+            for resource_id, object_key, raw_findings in store_scanner.iter_scan(target):
+                record_object_findings(final_json, findings_file, object_key, resource_id, raw_findings)
 
-            for file in files:
-                file_size = file.get("Size", None)
-                file_key = file.get("Key", None)
-
-                if (file_size and file_size < 100 * 1024 * 1024) and file_key:
-                    target = {
-                        "bucket": bucket_name,
-                        "key": file_key,
-                        "version_id": file.get("VersionId", None),
-                        "last_modified": file.get("LastModified", None),
-                    }
-                    raw_findings_for_file = s3scanner.scan(target)
-
-                    # If findings have multiple resource_ids (e.g. per-sheet Excel files or archive items)
-                    # group findings by sub-target/sheet
-                    ext = os.path.splitext(file_key)[1].lower()
-                    if ext in [".xlsx", ".xls"]:
-                        # Group raw findings by sheet
-                        sheet_findings_map: Dict[str, List[Dict[str, Any]]] = {}
-                        for finding in raw_findings_for_file:
-                            res_id = finding.get("resource_id", "")
-                            # Check if resource_id has [SheetName]
-                            if f"{target['bucket']}/{file_key} [" in res_id and res_id.endswith("]"):
-                                sheet_part = res_id.split(f"{target['bucket']}/{file_key} ")[-1]
-                                sheet_key = f"{file_key} {sheet_part}"
-                            else:
-                                sheet_key = file_key
-
-                            sheet_findings_map.setdefault(sheet_key, []).append(finding)
-
-                        if not sheet_findings_map:
-                            # Even if no findings, record the file entry
-                            final_json["findings"][file_key] = []
-                        else:
-                            for sheet_entry_key, s_findings in sheet_findings_map.items():
-                                final_json["findings"][sheet_entry_key] = club_findings(s_findings)
-                    else:
-                        final_json["findings"][file_key] = club_findings(raw_findings_for_file)
-
-                    final_json["files_scanned"] += 1
-                    with findings_file.open("w") as f:
-                        json.dump(final_json, f, indent=4, default=str)
-                else:
-                    logger.info(f"Skipping file {file_key} with size {file_size}")
-
-            scan_errors = s3scanner.stats.get("errors", 0)
-            if scan_errors:
-                errors.append(f"{scan_errors} error(s) during S3 scan, see logs")
-                logger.error(errors[-1])
+            error = _scan_errors(store_scanner, label)
+            if error:
+                errors.append(error)
+                logger.error(error)
         except Exception as e:
-            errors.append(f"S3 scan failed: {str(e)}")
+            errors.append(f"{label} scan failed: {str(e)}")
             logger.error(errors[-1])
 
     elif normalized_type in DB_OBJECT_TYPES:
@@ -316,6 +389,8 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
                 "database": bucket_name,
                 "sample_limit": settings.SAMPLE_LIMIT,
             }
+            if settings.DB_AUTH and settings.DB_AUTH != "password":
+                target["auth"] = settings.DB_AUTH  # azure_entra: the scanner identity's token is the password
 
             # DB_URI-only setups: derive the host so findings carry the real
             # resource id instead of 'localhost'
@@ -336,22 +411,40 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
 
             # A table/collection is the database counterpart of an S3 object: one entry
             # per relation (schema-qualified) or collection, clean ones included, checkpointed
-            # after each just like the per-object S3 loop above
+            # after each just like the per-object loop above
             for _resource_id, relation_name, relation_findings in db_scanner.iter_scan(target):
-                final_json["findings"][relation_name] = club_findings(relation_findings)
-                final_json["files_scanned"] += 1
-                with findings_file.open("w") as f:
-                    json.dump(final_json, f, indent=4, default=str)
+                _record_unit(final_json, findings_file, relation_name, relation_findings)
 
-            scan_errors = db_scanner.stats.get("errors", 0)
-            if scan_errors:
-                # Name the relations that were not scanned so the gap is visible in the findings file
-                details = db_scanner.stats.get("error_details") or []
-                suffix = ": " + "; ".join(details[:10]) if details else ", see logs"
-                errors.append(f"{scan_errors} error(s) during {engine_name} scan{suffix}")
-                logger.error(errors[-1])
+            # Name the relations that were not scanned so the gap is visible in the findings file
+            error = _scan_errors(db_scanner, engine_name)
+            if error:
+                errors.append(error)
+                logger.error(error)
         except Exception as e:
             errors.append(f"{engine_name} scan failed: {str(e)}")
+            logger.error(errors[-1])
+
+    elif normalized_type in COSMOS_OBJECT_TYPES:
+        try:
+            logger.info(f"Creating Cosmos DB scanner instance for {bucket_name}")
+            target = {
+                "endpoint": settings.AZURE_COSMOS_ENDPOINT,
+                "key": settings.AZURE_COSMOS_KEY,
+                "database": bucket_name,
+                "sample_limit": settings.SAMPLE_LIMIT,
+            }
+            cosmos_scanner = CosmosNoSQLScanner(engine, config)
+
+            # One entry per container, clean ones included, checkpointed after each
+            for _resource_id, container_name, container_findings in cosmos_scanner.iter_scan(target):
+                _record_unit(final_json, findings_file, container_name, container_findings)
+
+            error = _scan_errors(cosmos_scanner, "Cosmos DB")
+            if error:
+                errors.append(error)
+                logger.error(error)
+        except Exception as e:
+            errors.append(f"Cosmos DB scan failed: {str(e)}")
             logger.error(errors[-1])
 
     elif normalized_type in SAAS_OBJECT_TYPES:
@@ -386,19 +479,14 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
                 saas_scanner = SalesforceScanner(engine, config)
 
             # One entry per Drive file / sObject / attached file, clean ones included,
-            # checkpointed after each just like the S3 and DB loops above
+            # checkpointed after each just like the object-store and DB loops above
             for _resource_id, unit_name, unit_findings in saas_scanner.iter_scan(target):
-                final_json["findings"][unit_name] = club_findings(unit_findings)
-                final_json["files_scanned"] += 1
-                with findings_file.open("w") as f:
-                    json.dump(final_json, f, indent=4, default=str)
+                _record_unit(final_json, findings_file, unit_name, unit_findings)
 
-            scan_errors = saas_scanner.stats.get("errors", 0)
-            if scan_errors:
-                details = saas_scanner.stats.get("error_details") or []
-                suffix = ": " + "; ".join(details[:10]) if details else ", see logs"
-                errors.append(f"{scan_errors} error(s) during {connector} scan{suffix}")
-                logger.error(errors[-1])
+            error = _scan_errors(saas_scanner, connector)
+            if error:
+                errors.append(error)
+                logger.error(error)
         except Exception as e:
             errors.append(f"{connector} scan failed: {str(e)}")
             logger.error(errors[-1])
@@ -411,14 +499,13 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
     final_json["time_taken"] = str(end_time - start_time)
     final_json["errors"] = errors
 
-    with findings_file.open("w") as f:
-        json.dump(final_json, f, indent=4, default=str)
+    _checkpoint(final_json, findings_file)
 
     logger.info(f"Time taken for scanning {bucket_name}: {end_time - start_time}")
 
     # Zip findings file
     logger.info(f"Zipping findings for {bucket_name} before sending to Artifact API")
-    zip_file = FINDINGS_DIR / f"{bucket_name}-{scan_date}.zip"
+    zip_file = findings_file.with_suffix(".zip")
 
     with zipfile.ZipFile(
         zip_file,
@@ -498,7 +585,8 @@ def lambda_handler(event: Dict[str, Any] = None, context: Any = None) -> Dict[st
             }),
         }
 
-    # The Artifact API attributes S3 findings to an AWS account; database targets don't need one
+    # The Artifact API attributes object-store findings to a cloud account: the AWS account for S3
+    # buckets, the Azure subscription for Blob containers. Database targets don't need one.
     s3_targets = [name for name, obj_type in objects_dict.items() if str(obj_type).upper() in S3_OBJECT_TYPES]
     if s3_targets and not settings.AWS_ACCOUNT_ID:
         logger.error("AWS Account ID is not configured. Please configure it in settings.py")
@@ -507,6 +595,16 @@ def lambda_handler(event: Dict[str, Any] = None, context: Any = None) -> Dict[st
             "body": json.dumps({
                 "status": "failed",
                 "error": "AWS Account ID is not configured. Please configure it in settings.py",
+            }),
+        }
+    blob_targets = [name for name, obj_type in objects_dict.items() if str(obj_type).upper() in AZURE_BLOB_OBJECT_TYPES]
+    if blob_targets and not settings.AZURE_SUBSCRIPTION_ID:
+        logger.error("AZURE_SUBSCRIPTION_ID is not configured; it is required for Azure Blob targets")
+        return {
+            "statusCode": 400,
+            "body": json.dumps({
+                "status": "failed",
+                "error": "AZURE_SUBSCRIPTION_ID is not configured; it is required for Azure Blob targets",
             }),
         }
 

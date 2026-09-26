@@ -46,7 +46,11 @@ DEFAULT_COLUMN_SUPPRESSION = {
 
 LocationFn = Callable[[str, int], str]
 
+# Object-store connectors skip files larger than this (override: config["max_file_bytes"])
+MAX_FILE_BYTES = 100 * 1024 * 1024
+
 _S3_ARN_PREFIX = "arn:aws:s3:::"
+_AZURE_BLOB_URL = re.compile(r"^https?://([^./:]+)\.blob\.[^/]+/(.*)$", re.IGNORECASE)
 _UNSAFE_PATH_CHARS = re.compile(r"[^A-Za-z0-9._@()+ -]")
 
 
@@ -54,12 +58,16 @@ def resource_path(resource_id: str) -> str:
     """
     A relative, traversal-safe directory path that mirrors a resource id:
     arn:aws:s3:::bucket/exports/a.csv -> s3/bucket/exports/a.csv,
+    https://acct.blob.core.windows.net/uploads/a.csv -> azblob/acct/uploads/a.csv,
     gdrive://u@x.com/<file id>/Q3 deck -> gdrive/u@x.com/<file id>/Q3 deck.
     Every segment is sanitised; '.', '..' and empty segments are dropped.
     """
     rid = str(resource_id or "")
+    blob_url = _AZURE_BLOB_URL.match(rid)
     if rid.startswith(_S3_ARN_PREFIX):
         rid = "s3/" + rid[len(_S3_ARN_PREFIX):]
+    elif blob_url:
+        rid = f"azblob/{blob_url.group(1)}/{blob_url.group(2)}"
     segments = []
     for segment in rid.replace("://", "/").replace("\\", "/").split("/"):
         segment = _UNSAFE_PATH_CHARS.sub("_", segment).strip(" .")
@@ -145,8 +153,8 @@ class BaseScanner(ABC):
         """
         Classifies every unit (file, sheet, archive member) of a local file
         through the shared parsers (src/scanners/files). Used by every
-        connector that materialises objects on temporary disk (S3, Google
-        Drive, Salesforce files).
+        connector that materialises objects on temporary disk (S3, Azure Blob,
+        Google Drive, Salesforce files).
         """
         from src.scanners.files import iter_units  # local import keeps base import-light
 
@@ -168,8 +176,9 @@ class BaseScanner(ABC):
         With config["keep_files_dir"] set (the worker sets it to <OUTPUT_DIR>/scanned
         when KEEP_SCANNED_FILES=true) the directory is <keep_files_dir>/<resource path>
         instead and survives the scan, so the exact bytes the scanner classified can be
-        opened afterwards: s3/<bucket>/<key>, gdrive/<user or drive>/<file id>/<name>,
-        salesforce/<host>/<object>/<record id>/<name>. Local testing only - it
+        opened afterwards: s3/<bucket>/<key>, azblob/<account>/<container>/<blob>,
+        gdrive/<user or drive>/<file id>/<name>, salesforce/<host>/<object>/<record id>/<name>.
+        Local testing only - it
         duplicates the sensitive data on disk.
         """
         keep_root = self.config.get("keep_files_dir")
