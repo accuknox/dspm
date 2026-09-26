@@ -29,7 +29,7 @@ from src.engine.validators import verhoeff_check
 
 _EPS = 0.00001
 _BY_NAME = {r.name: r for r in RULES}
-_MAPPING_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fixtures", "findings-mapping.json")
+_MAPPING_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fixtures", "findings-mapping-v2.json")
 
 
 def _rule(name):

@@ -155,7 +155,7 @@ def detectable_example(engine, rule, field) -> str:
 
 
 def build():
-    mapping = json.loads((ROOT / "fixtures" / "findings-mapping.json").read_text())[0]
+    mapping = json.loads((ROOT / "fixtures" / "findings-mapping-v2.json").read_text())[0]
     rows = []
     used = set()
     engine = DetectionEngine({"enabled_regions": regions(), "ner": False})

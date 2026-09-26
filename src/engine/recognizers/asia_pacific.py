@@ -157,10 +157,10 @@ def _validate_au_ihi(text: str) -> bool:
     return len(v) == 16 and v.startswith("800360") and _plain_luhn(v)
 
 
-def _rule(name, region, description, patterns, context, validator=None, field_hint=None, examples=(), category=_REGIONAL, severity="Critical"):
+def _rule(name, region, description, patterns, context, validator=None, field_hint=None, examples=(), category=_REGIONAL, severity="Critical", **kwargs):
     return Rule(
         name=name, category=category, severity=severity, region=region, description=description,
-        patterns=patterns, context=context, validator=validator, field_hint=field_hint, examples=list(examples),
+        patterns=patterns, context=context, validator=validator, field_hint=field_hint, examples=list(examples), **kwargs,
     )
 
 
@@ -253,6 +253,7 @@ RULES = [
         [Pattern("IFSC", r"\b[A-Z]{4}0[A-Z0-9]{6}\b", 0.3)],
         ["ifsc", "ifsc code", "bank", "branch", "neft", "rtgs", "imps"],
         None, r"ifsc", ["HDFC0001234"], category=_FINANCIAL, severity="Low",  # pragma: allowlist secret
+        min_score_with_context=0.8,  # the 4-letter + 0 + 6 shape next to a bank word is a code, not a word
     ),
     _rule(
         "IN_UPI_ID", "IN", "Indian UPI virtual payment address: handle@bank-psp (okaxis, ybl, paytm, upi ...).",

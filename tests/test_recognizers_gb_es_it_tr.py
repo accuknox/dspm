@@ -21,7 +21,7 @@ from src.engine.recognizers.gb_es_it_tr import (
 from src.engine.rules import run_rule
 
 EPS = 1e-6
-MAPPING_PATH = Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping.json"
+MAPPING_PATH = Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping-v2.json"
 
 
 def _rule(name):
@@ -224,7 +224,7 @@ def test_uk_passport():
         ("AB1234567", [(0, 9, 0.1)]),
         ("XY9876543", [(0, 9, 0.1)]),
         ("ab1234567", [(0, 9, 0.1)]),
-        ("My passport number is CD7654321 and it expires soon", [(22, 31, 0.45)]),  # context: "passport"
+        ("My passport number is CD7654321 and it expires soon", [(22, 31, 0.8)]),  # context: "passport"
         ("Passports: AB1234567 and XY9876543", [(11, 20, 0.1), (25, 34, 0.1)]),     # "passports" is not a context word
     ]
     invalid = [
@@ -260,8 +260,8 @@ def test_uk_postcode():
         ("EC1A1BB", [(0, 7, 0.1)]),
         ("DN551PT", [(0, 7, 0.1)]),
         ("GIR0AA", [(0, 6, 0.1)]),
-        ("My address is SW1A 1AA in London", [(14, 22, 0.45)]),   # context: "address"
-        ("Send to postcode EC2A 1NT please", [(17, 25, 0.45)]),   # context: "postcode"
+        ("My address is SW1A 1AA in London", [(14, 22, 0.8)]),   # context: "address"
+        ("Send to postcode EC2A 1NT please", [(17, 25, 0.8)]),   # context: "postcode"
         ("From SW1A 1AA to EC1A 1BB", [(5, 13, 0.1), (17, 25, 0.1)]),
     ]
     invalid = [
@@ -403,15 +403,15 @@ def test_es_passport():
     valid = [
         ("AAA123456", [(0, 9, 0.05)]),
         ("XYZ987654", [(0, 9, 0.05)]),
-        ("Mi pasaporte es AAA123456", [(16, 25, 0.4)]),               # context: "pasaporte"
+        ("Mi pasaporte es AAA123456", [(16, 25, 0.8)]),  # keyword floor               # context: "pasaporte"
         ("AAA123456 es mi número de pasaporte", [(0, 9, 0.05)]),      # "pasaporte" is beyond the 3-word suffix window
         ("aaa123456", [(0, 9, 0.05)]),
         ("xyz987654", [(0, 9, 0.05)]),
-        ("Mi pasaporte es aaa123456", [(16, 25, 0.4)]),
+        ("Mi pasaporte es aaa123456", [(16, 25, 0.8)]),
         ("aaa123456 es mi número de pasaporte", [(0, 9, 0.05)]),
         ("AaA123456", [(0, 9, 0.05)]),
         ("XyZ987654", [(0, 9, 0.05)]),
-        ("Mi pasaporte es AaA123456", [(16, 25, 0.4)]),
+        ("Mi pasaporte es AaA123456", [(16, 25, 0.8)]),
         ("AaA123456 es mi número de pasaporte", [(0, 9, 0.05)]),
     ]
     invalid = [

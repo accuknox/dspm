@@ -286,11 +286,13 @@ RULES: List[Rule] = [
         region="US",
         description="US passport number (UsPassportRecognizer): 9 digits or letter + 8 digits (next generation).",
         patterns=[
+            Pattern("Passport (labelled)", r"\bpassport(?: number| no\.?| #|#)?\s*[:#-]?\s*(?P<v>[A-Z]?[0-9]{8,9})\b", 0.85),
             Pattern("Passport (very weak)", r"(\b[0-9]{9}\b)", 0.05),
             Pattern("Passport Next Generation (very weak)", r"(\b[A-Z][0-9]{8}\b)", 0.1),
         ],
         context=["us", "united", "states", "passport", "passport#", "travel", "document"],
         field_hint=r"passport",
+        min_score_with_context=0.5,  # "passport" next to a 9-digit run is a candidate, not silence
         examples=["912803456", "A12803456"], #pragma: allowlist secret
     ),
     Rule(
@@ -305,10 +307,12 @@ RULES: List[Rule] = [
                 r"\b([A-Z][0-9]{3,6}|[A-Z][0-9]{5,9}|[A-Z][0-9]{6,8}|[A-Z][0-9]{4,8}|[A-Z][0-9]{9,11}|[A-Z]{1,2}[0-9]{5,6}|H[0-9]{8}|V[0-9]{6}|X[0-9]{8}|A-Z]{2}[0-9]{2,5}|[A-Z]{2}[0-9]{3,7}|[0-9]{2}[A-Z]{3}[0-9]{5,6}|[A-Z][0-9]{13,14}|[A-Z][0-9]{18}|[A-Z][0-9]{6}R|[A-Z][0-9]{9}|[A-Z][0-9]{1,12}|[0-9]{9}[A-Z]|[A-Z]{2}[0-9]{6}[A-Z]|[0-9]{8}[A-Z]{2}|[0-9]{3}[A-Z]{2}[0-9]{4}|[A-Z][0-9][A-Z][0-9][A-Z]|[0-9]{7,8}[A-Z])\b",
                 0.3,
             ),
+            Pattern("Driver License (labelled)", r"\bdriver'?s?[ -]licen[cs]e(?: number| no\.?| #|#)?(?: of| is)?\s*[:#(-]?\s*(?P<v>(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{4,15})(?![A-Z0-9])", 0.85),
             Pattern("Driver License - Digits (very weak)", r"\b([0-9]{6,14}|[0-9]{16})\b", 0.01),
         ],
         context=["driver", "license", "permit", "lic", "identification", "dls", "cdls", "lic#", "driving"],
         field_hint=r"driv(er|ing)s?_?licen[cs]e|(?<![a-z])dl_?(num|no|number|id)(?![a-z])|(?<![a-z])dln(?![a-z])",
+        min_score_with_context=0.5,
         examples=["H12234567"],
     ),
     Rule(
@@ -399,9 +403,16 @@ RULES: List[Rule] = [
                 r"(?=[A-Z0-9-]*\d)[A-Z]{1,5}-?[A-Z0-9]{5,14}\b",
                 0.1,
             ),
+            Pattern(  # the label itself is the evidence: "health plan beneficiary number is 8429 301 745 MN"
+                "Health plan id (labelled)",
+                r"\b(?:health plan beneficiary (?:number|id|no\.?)|beneficiary (?:number|id|no\.?)|member (?:id|number|no\.?)|"
+                r"subscriber (?:id|number|no\.?)|plan member (?:id|number))\s*(?:is|:|#|-)?\s*"
+                r"(?P<v>(?:(?=[A-Z0-9-]{5,20}(?![A-Z0-9-]))(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{4,19}|\d{3,4}(?:[ -]\d{3,4}){1,3})(?:\s(?-i:[A-Z]{2}))?)(?![A-Z0-9-])",
+                0.85,
+            ),
         ],
         context=["member", "subscriber", "insurance", "policy"],
-        field_hint=r"member_?(id|num|no|number)|subscriber_?(id|num|no|number)|insurance_?(id|num|no|number)|policy_?(num|no|number)",
+        field_hint=r"member_?(id|num|no|number)|subscriber_?(id|num|no|number)|insurance_?(id|num|no|number)|policy_?(num|no|number)|beneficiary",
         examples=["ABC123456789", "ZX-987654321", "HPN12345A9"], #pragma: allowlist secret
     ),
     Rule(

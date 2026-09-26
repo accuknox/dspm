@@ -63,6 +63,11 @@ def _single(rule, text, value, lo, hi=None):
     _check(rule, text, [(start, start + len(value), lo, hi)])
 
 
+def _admin_score(name):
+    """Labelled claim, prior-authorization and referral numbers reach the `likely` floor (0.8); the others keep upstream's 0.7."""
+    return 0.8 if name in ("US_PRIOR_AUTHORIZATION_NUMBER", "US_CLAIM_NUMBER", "US_REFERRAL_NUMBER") else 0.7
+
+
 def _below(rule, text, threshold):
     """Every result scores below `threshold` (the upstream recognizer's analyzer would drop it)."""
     for res in _found(rule, text):
@@ -81,7 +86,7 @@ def _field(rule, value, field_name):
 
 def _load_mapping():
     """fixtures/findings-mapping.json: {detector: entry} (historically wrapped in a one-element list)."""
-    with open(ROOT / "fixtures" / "findings-mapping.json", encoding="utf-8") as fh:
+    with open(ROOT / "fixtures" / "findings-mapping-v2.json", encoding="utf-8") as fh:
         data = json.load(fh)
     return data[0] if isinstance(data, list) else data
 
@@ -197,10 +202,12 @@ def test_us_passport_upstream_cases():
     _check(rule, "912803456", [(0, 9, 0.0, 0.1)])
     _check(rule, "Z12803456", [(0, 9, 0.0, 0.15)])
     _check(rule, "A12803456", [(0, 9, 0.0, 0.15)])
-    # "travel" / "passport" are context words: upstream expects >= 0.0, the engine boosts to 0.45
+    # "travel" / "passport" are context words: upstream expects >= 0.0, the engine lifts a keyword-backed
+    # number to the `possible` floor (0.5) so column density or a record can promote it; a label reports the value
     _check(rule, "my travel document is A12803456", [(22, 31, 0.0, MAX)])
     _check(rule, "my travel passport is A12803456", [(22, 31, 0.0, MAX)])
-    _single(rule, "my travel passport is A12803456", "A12803456", 0.45)
+    _single(rule, "my travel passport is A12803456", "A12803456", 0.5)
+    _single(rule, "Passport Number: B31498009", "B31498009", 0.85, 1.0)
 
 
 def test_us_passport_field_name():
@@ -343,16 +350,16 @@ def test_us_health_insurance_member_id_with_context():
         ("Policy ID CIGNA123456 belongs to the patient", ((10, 21),)),
         ("The insurance card lists subscriber number K123456789", ((43, 53),)),
     ):
-        _check(rule, text, [(s, e, 0.45, 0.45) for s, e in spans])
+        _check(rule, text, [(s, e, 0.45, 1.0) for s, e in spans])  # a label pattern plus its context word scores 1.0, context alone 0.45
     # case-insensitive, trailing punctuation outside the span
-    _single(rule, "member id abc123456", "abc123456", 0.45)
-    _single(rule, "MeMbEr Id AbC123456", "AbC123456", 0.45)
-    _single(rule, "Subscriber ID zx-987654321.", "zx-987654321", 0.45)
+    _single(rule, "member id abc123456", "abc123456", 0.85, 1.0)
+    _single(rule, "MeMbEr Id AbC123456", "AbC123456", 0.45, 1.0)
+    _single(rule, "Subscriber ID zx-987654321.", "zx-987654321", 0.45, 1.0)
     # multiple IDs
-    _check(rule, "Member ID ABC123456 and subscriber ID ZX-987654321.", [(10, 19, 0.45, 0.45), (38, 50, 0.45, 0.45)])
+    _check(rule, "Member ID ABC123456 and subscriber ID ZX-987654321.", [(10, 19, 0.45, 1.0), (38, 50, 0.45, 1.0)])
     # 6 and 20 character boundaries
-    _single(rule, "Member ID A12345", "A12345", 0.45)
-    _single(rule, "Member ID ABCDE-12345678901234", "ABCDE-12345678901234", 0.45)
+    _single(rule, "Member ID A12345", "A12345", 0.45, 1.0)
+    _single(rule, "Member ID ABCDE-12345678901234", "ABCDE-12345678901234", 0.45, 1.0)
 
 
 def test_us_health_insurance_member_id_without_context():
@@ -365,9 +372,11 @@ def test_us_health_insurance_member_id_without_context():
         "ICD10CM123", "ABC-1234567",
     ):
         _below(rule, text, 0.4)
-    # implausible: numeric-only, too short, too long
-    for text in ("Member ID 1234567890", "Subscriber ID A123", "Member ID ABCDE-123456789012345"):
+    # implausible: too short, too long; a numeric-only id counts only with its label in front
+    for text in ("Subscriber ID A123", "Member ID ABCDE-123456789012345", "1234567890"):
         _none(rule, text)
+    _single(rule, "Member ID 1234567890", "1234567890", 0.85, 1.0)
+    _single(rule, "health plan beneficiary number is 8429 301 745 MN.", "8429 301 745 MN", 0.85, 1.0)
     # raw pattern score
     _check(rule, "ABC123456789", [(0, 12, 0.1, 0.1)])
 
@@ -391,7 +400,7 @@ _ADMIN = (
 
 def test_healthcare_admin_id_with_context_is_detected():
     for name, text, value in _ADMIN:
-        _single(_rule(name), text, value, 0.7)
+        _single(_rule(name), text, value, _admin_score(name))
 
 
 def test_healthcare_admin_id_matching_is_case_insensitive():
@@ -402,7 +411,7 @@ def test_healthcare_admin_id_matching_is_case_insensitive():
         ("US_REFERRAL_NUMBER", "rEfErRaL inf123456", "inf123456"),
         ("US_PROVIDER_TAX_ID", "bIlLiNg PrOvIdEr eIn: 12-3456789", "12-3456789"),
     ):
-        _single(_rule(name), text, value, 0.7)
+        _single(_rule(name), text, value, _admin_score(name))
 
 
 def test_healthcare_admin_multiple_ids_are_all_detected():
@@ -415,7 +424,7 @@ def test_healthcare_admin_multiple_ids_are_all_detected():
     ):
         results = _found(_rule(name), text)
         assert [r["value"] for r in results] == values, (name, text, results)
-        assert all(abs(r["score"] - 0.7) < EPS for r in results), (name, results)
+        assert all(abs(r["score"] - _admin_score(name)) < EPS for r in results), (name, results)
 
 
 def test_healthcare_admin_id_ignores_trailing_punctuation():
@@ -426,7 +435,7 @@ def test_healthcare_admin_id_ignores_trailing_punctuation():
         ("US_REFERRAL_NUMBER", "Referral REF123456.", "REF123456"),
         ("US_PROVIDER_TAX_ID", "Provider EIN 12-3456789.", "12-3456789"),
     ):
-        _single(_rule(name), text, value, 0.7)
+        _single(_rule(name), text, value, _admin_score(name))
 
 
 def test_healthcare_admin_id_length_boundaries():
@@ -440,7 +449,7 @@ def test_healthcare_admin_id_length_boundaries():
         ("US_REFERRAL_NUMBER", "Referral REF123456", "REF123456"),
         ("US_REFERRAL_NUMBER", "Referral INF123456789012", "INF123456789012"),
     ):
-        _single(_rule(name), text, value, 0.7)
+        _single(_rule(name), text, value, _admin_score(name))
     for name, text in (
         ("US_PRIOR_AUTHORIZATION_NUMBER", "PA-12345"),
         ("US_PRIOR_AUTHORIZATION_NUMBER", "PA-1234567890123"),
@@ -458,13 +467,13 @@ def test_healthcare_admin_id_length_boundaries():
 
 def test_healthcare_admin_label_enables_bare_numeric_id():
     for name, text, value, score in (
-        ("US_PRIOR_AUTHORIZATION_NUMBER", "Prior authorization number: 987654321 approved.", "987654321", 0.7),
-        ("US_CLAIM_NUMBER", "Claim number: 1234567890123 was paid.", "1234567890123", 0.7),
-        ("US_CLAIM_NUMBER", "Claim ID 123456789012345 was paid.", "123456789012345", 0.7),
+        ("US_PRIOR_AUTHORIZATION_NUMBER", "Prior authorization number: 987654321 approved.", "987654321", 0.8),
+        ("US_CLAIM_NUMBER", "Claim number: 1234567890123 was paid.", "1234567890123", 0.8),
+        ("US_CLAIM_NUMBER", "Claim ID 123456789012345 was paid.", "123456789012345", 0.8),
         ("US_PRESCRIPTION_NUMBER", "Rx #1234567", "1234567", 0.6),
         ("US_PRESCRIPTION_NUMBER", "Prescription number: 7654321", "7654321", 0.7),
         ("US_PRESCRIPTION_NUMBER", "prescription 4455667", "4455667", 0.7),
-        ("US_REFERRAL_NUMBER", "Infusion referral number: 2025001234", "2025001234", 0.7),
+        ("US_REFERRAL_NUMBER", "Infusion referral number: 2025001234", "2025001234", 0.8),
     ):
         _single(_rule(name), text, value, score)
     # a claim label does not support a prescription number match
@@ -575,7 +584,7 @@ def test_ca_postal_code_upstream_cases():
     _check(rule, "K1A0A1", [(0, 6, 0.1, 0.1)])
     # "postal code" is a context phrase: upstream expects 0.3, the engine boosts to 0.65
     _check(rule, "My postal code is K1A 0A1 thanks", [(18, 25, 0.3, MAX)])
-    _single(rule, "My postal code is K1A 0A1 thanks", "K1A 0A1", 0.65)
+    _single(rule, "My postal code is K1A 0A1 thanks", "K1A 0A1", 0.8)  # keyword floor
     _check(rule, "From K1A 0A1 to M5V 3A8", [(5, 12, 0.3, 0.3), (16, 23, 0.3, 0.3)])
 
 

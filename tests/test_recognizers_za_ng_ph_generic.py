@@ -107,7 +107,7 @@ def test_rule_names_and_regions():
 
 
 def test_category_and_severity_follow_findings_mapping():
-    with open(os.path.join(_ROOT, "fixtures", "findings-mapping.json")) as fh:
+    with open(os.path.join(_ROOT, "fixtures", "findings-mapping-v2.json")) as fh:
         mapping = json.load(fh)
     if isinstance(mapping, list):  # historical shape: a list wrapping one dict
         mapping = mapping[0]
@@ -541,7 +541,7 @@ def test_ph_passport():
         ],
     )
     _check_exact("PH_PASSPORT", "P1234567A", [(0, 9, 0.1)])
-    _check_exact("PH_PASSPORT", "Passport: EB1234567 is valid.", [(10, 19, 0.45)])
+    _check_exact("PH_PASSPORT", "Passport: EB1234567 is valid.", [(10, 19, 0.8)])  # keyword floor
 
 
 def test_ph_mobile_number():

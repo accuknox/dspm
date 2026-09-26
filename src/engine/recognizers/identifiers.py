@@ -5,6 +5,7 @@ codes, medical record numbers. Everything here is `context: required` in the
 detector policy - weak shapes only surface through a column name, a keyword
 or column density.
 """
+import re
 from typing import Optional
 
 from src.engine.rules import Pattern, Rule
@@ -81,20 +82,27 @@ def _validate_passport_mrz(text: str) -> Optional[bool]:
 
 
 def _validate_geo(text: str) -> Optional[bool]:
+    """A lat,lon / lat lon / hemisphere pair within range, or a single in-range value; never authoritative."""
+    cleaned = re.sub(r"[°NSEW]", "", text, flags=re.IGNORECASE)
     try:
-        lat, lon = (float(part.strip()) for part in text.split(","))
+        parts = [float(part) for part in re.split(r"[,\s]+", cleaned.strip()) if part]
     except ValueError:
         return False
-    if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
-        return False
-    return None if (lat, lon) != (0.0, 0.0) else False
+    if len(parts) == 2:
+        lat, lon = parts
+        if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
+            return False
+        return None if (lat, lon) != (0.0, 0.0) else False
+    if len(parts) == 1:
+        return None if -180.0 <= parts[0] <= 180.0 and parts[0] != 0.0 else False
+    return False
 
 
-def _rule(name, description, patterns, context, validator=None, field_hint=None, examples=(), category=_PII, severity="Low", weak_validation=False):
+def _rule(name, description, patterns, context, validator=None, field_hint=None, examples=(), category=_PII, severity="Low", weak_validation=False, **kwargs):
     return Rule(
         name=name, category=category, severity=severity, region=None, description=description,
         patterns=patterns, context=context, validator=validator, field_hint=field_hint, examples=list(examples),
-        weak_validation=weak_validation,
+        weak_validation=weak_validation, **kwargs,
     )
 
 
@@ -103,7 +111,7 @@ RULES = [
         "IMEI", "Mobile equipment identity (IMEI): 15 digits with a Luhn check digit.",
         [Pattern("IMEI (formatted)", r"\b\d{2}[- ]\d{6}[- ]\d{6}[- ]\d\b", 0.3), Pattern("IMEI (weak)", r"\b\d{15}\b", 0.05)],
         ["imei", "device id", "handset", "equipment identity", "device identifier"],
-        _validate_imei, r"imei|device_?id|handset", ["35-845422-110932-2", "352318504122227"],  # pragma: allowlist secret
+        _validate_imei, r"imei|device_?id|handset|equipment", ["35-845422-110932-2", "352318504122227"],  # pragma: allowlist secret
     ),
     _rule(
         "ICCID", "SIM card serial (ICCID): 19-20 digits starting 89 with a Luhn check digit.",
@@ -129,9 +137,15 @@ RULES = [
     ),
     _rule(
         "GEO_COORDINATES", "Geographic coordinates: latitude, longitude pair with 4+ decimals; reported next to location context.",
-        [Pattern("lat,lon", r"(?<![\d.-])-?(?:[0-8]?\d\.\d{4,}|90\.0+),\s?-?(?:1[0-7]\d\.\d{4,}|[0-9]?\d\.\d{4,}|180\.0+)(?![\d.])", 0.5)],
-        ["lat", "lng", "lon", "latitude", "longitude", "gps", "coordinates", "geo", "location", "geolocation"],
-        _validate_geo, r"(?<![a-z])lat(?![a-z])|(?<![a-z])l(?:o?n|ng)(?![a-z])|latitude|longitude|(?<![a-z])geo(?![a-z])|gps|coord|location", ["12.9716, 77.5946", "-33.8688,151.2093"],  # pragma: allowlist secret
+        [
+            Pattern("lat,lon", r"(?<![\d.-])-?(?:[0-8]?\d\.\d{4,}|90\.0+),\s?-?(?:1[0-7]\d\.\d{4,}|[0-9]?\d\.\d{4,}|180\.0+)(?![\d.])", 0.5),
+            Pattern("lat lon (space)", r"(?<![\d.-])-?(?:[0-8]?\d\.\d{4,}|90\.0+)\s-?(?:1[0-7]\d\.\d{4,}|[0-9]?\d\.\d{4,}|180\.0+)(?![\d.])", 0.5),
+            Pattern("hemisphere pair", r"\b[0-8]?\d\.\d{3,}\s?°?\s?[NS],?\s+(?:1[0-7]\d|[0-9]?\d)\.\d{3,}\s?°?\s?[EW]\b", 0.5),
+            Pattern("single coordinate (weak)", r"(?<![\d.-])-?(?:1[0-7]\d|[0-9]?\d)\.\d{4,}(?![\d.])", 0.05),
+        ],
+        ["lat", "lng", "lon", "latitude", "longitude", "gps", "coordinates", "coordinate", "geo", "location", "geolocation", "position"],
+        _validate_geo, r"(?<![a-z])lat(?![a-z])|(?<![a-z])l(?:o?n|ng)(?![a-z])|latitude|longitude|(?<![a-z])geo(?![a-z])|gps|coord|location|position", ["12.9716, 77.5946", "-33.8688,151.2093"],  # pragma: allowlist secret
+        min_score_with_context=0.5,  # a lone 4-decimal number is a coordinate only where a lat/lng field or keyword says so
     ),
     _rule(
         "ICD10_CODE", "ICD-10 diagnosis code (letter + 2 digits + optional decimals); only meaningful under a diagnosis column or keyword.",
@@ -147,8 +161,15 @@ RULES = [
     ),
     _rule(
         "MEDICAL_RECORD_NUMBER", "Medical record number labelled MRN (6-10 digits) or in an MRN-named column.",
-        [Pattern("MRN (labelled)", r"\bMRN[:# ]?\s?\d{6,10}\b", 0.6), Pattern("MRN (weak)", r"\b\d{6,10}\b", 0.01)],
+        [
+            Pattern("MRN (labelled)", r"\bMRN[:# -]?\s?\d{6,10}\b", 0.85),
+            Pattern("MRN (labelled, alphanumeric)", r"\b(?:medical record(?: number| no\.?| #)?s?|medrec|mrn)[\s:#|,\"'-]*(?P<v>[A-Z]{1,3}-?\d{5,10})\b", 0.85),
+            Pattern("MRN (alphanumeric, weak)", r"\b[A-Z]{1,3}-?\d{6,10}\b", 0.15),
+            Pattern("MRN (labelled words)", r"\b(?:medical record(?: number| no\.?| #)?|record number|patient (?:id|number|no\.?)|chart (?:number|no\.?))\s*[:#|-]?\s*(?P<v>(?:MRN-?)?\d{6,12})\b", 0.85),
+            Pattern("MRN (weak)", r"\b\d{6,10}\b", 0.01),
+        ],
         ["mrn", "medical record", "medical record number", "patient id", "chart number"],
-        None, r"(?<![a-z])mrn(?![a-z])|medical_?record|patient_?(?:id|number|no)|chart_?(?:no|number)", ["MRN: 12345678", "MRN 4587120"], category=_PHI, severity="High",  # pragma: allowlist secret
+        None, r"(?<![a-z])mrn(?![a-z])|medical_?record|med_?rec|patient_?(?:id|number|no)|chart_?(?:no|number)", ["MRN: 12345678", "MRN 4587120"], category=_PHI, severity="High",  # pragma: allowlist secret
+        min_score_with_context=0.5,  # a digit run next to "medical record" is a candidate; column density or the label decides
     ),
 ]

@@ -26,6 +26,21 @@ MODULES = (
 )
 
 _ALL: Optional[List[Rule]] = None
+
+# Rules whose upstream pattern score is low (0.01-0.35) but whose shape is specific enough that a keyword next
+# to the value makes it `likely` rather than merely `possible`: passports and licences with fixed letter/digit
+# layouts, postcodes with their own grammar, tax and healthcare administration ids with prefix rules, vehicle ids.
+# Left out on purpose: bare digit runs that collide with phones, dates and counters (bank accounts, PLZ, TIN,
+# sort codes, BSB) and ICD-10, whose letter + 2 digits shape is also a vitamin or a bus route.
+LIKELY_FLOOR = 0.8
+KEYWORD_MAKES_LIKELY = frozenset({
+    "AR_DNI", "CA_POSTAL_CODE", "UK_POSTCODE",
+    "DE_FUEHRERSCHEIN", "DE_KFZ", "IT_DRIVER_LICENSE", "IT_IDENTITY_CARD",
+    "ES_PASSPORT", "FR_PASSPORT", "UK_PASSPORT", "IT_PASSPORT", "JP_PASSPORT", "KR_PASSPORT", "PH_PASSPORT",
+    "US_ALIEN_REGISTRATION", "US_EIN",  # US_PROVIDER_TAX_ID stays at 0.7: "employee tax id" is a deliberate non-match for the PHI class
+    "US_CLAIM_NUMBER", "US_PRIOR_AUTHORIZATION_NUMBER", "US_REFERRAL_NUMBER",
+    "VN_CCCD", "NDC_CODE", "VIN",
+})
 _BY_NAME: Dict[str, Rule] = {}
 
 
@@ -42,6 +57,9 @@ def load_all() -> List[Rule]:
             if rule.name in by_name:
                 raise ValueError(f"Duplicate upstream rule name: {rule.name}")
             by_name[rule.name] = rule
+        for rule in rules:
+            if rule.name in KEYWORD_MAKES_LIKELY:
+                rule.min_score_with_context = max(rule.min_score_with_context, LIKELY_FLOOR)
         _BY_NAME.update(by_name)
         _ALL = rules
     return _ALL
