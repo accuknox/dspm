@@ -7,16 +7,20 @@ from src.engine.detector import DetectionEngine
 from src.scanners.aws.ddb import DynamoDBScanner
 from src.scanners.aws.rds import RDSScanner
 from src.scanners.aws.s3 import S3Scanner
+from src.scanners.azure.blob import AzureBlobScanner
+from src.scanners.azure.cosmos import CosmosNoSQLScanner
 from src.scanners.db.mongo import MongoScanner
 from src.scanners.db.sql import SQLScanner
 from src.scanners.saas.gdrive import GoogleDriveScanner
 from src.scanners.saas.salesforce import SalesforceScanner
 from src.utils.aws import get_secret
+from src.utils.azure import get_keyvault_secret, is_keyvault_uri
 from src.utils.logger import get_logger
 
 logger = get_logger("handler")
 
-# scan_type aliases -> canonical engine name for the SQL scanner
+# scan_type aliases -> canonical engine name for the SQL scanner. Azure Database for PostgreSQL /
+# MySQL Flexible Server and Azure SQL are ordinary wire-protocol databases to the scanner.
 SQL_SCAN_TYPES = {
     "postgres": "postgres",
     "postgresql": "postgres",
@@ -24,25 +28,37 @@ SQL_SCAN_TYPES = {
     "mariadb": "mariadb",
     "mssql": "mssql",
     "sqlserver": "mssql",
+    "azure_postgres": "postgres",
+    "azure_postgresql": "postgres",
+    "azure_mysql": "mysql",
+    "azure_sql": "mssql",
+    "azure_mssql": "mssql",
 }
-MONGO_SCAN_TYPES = {"mongo", "mongodb", "documentdb"}
+MONGO_SCAN_TYPES = {"mongo", "mongodb", "documentdb", "cosmos_mongo", "cosmosdb_mongo", "azure_cosmos_mongo"}
+AZURE_BLOB_SCAN_TYPES = {"azure_blob", "azureblob", "blob", "adls", "adls_gen2", "azure_storage"}
+COSMOS_SCAN_TYPES = {"cosmos", "cosmosdb", "cosmos_nosql", "cosmosdb_nosql", "azure_cosmos", "azure_cosmos_nosql"}
 GDRIVE_SCAN_TYPES = {"gdrive", "googledrive", "google_drive", "googleworkspace", "google_workspace"}
 SALESFORCE_SCAN_TYPES = {"salesforce", "sfdc"}
+
+# Fields a secret may supply when the target leaves them out
+SECRET_FIELDS = (
+    "username", "password", "host", "port", "database", "uri",
+    "consumer_key", "consumer_secret", "domain", "access_token", "instance_url",
+    "key", "endpoint", "account", "connection_string", "sas_token", "account_key",
+)
 
 
 def resolve_db_credentials(target: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Fills missing connection details from AWS Secrets Manager if the target
-    specifies a password_secret ARN/name.
+    Fills missing connection details from a secret store when the target names a
+    password_secret: an AWS Secrets Manager ARN/name, or an Azure Key Vault secret
+    URI (https://<vault>.vault.azure.net/secrets/<name>) read with the scanner identity.
     """
-    secret_arn = target.get("password_secret")
-    if secret_arn:
-        secret_data = get_secret(secret_arn)
+    secret_ref = target.get("password_secret")
+    if secret_ref:
+        secret_data = get_keyvault_secret(secret_ref) if is_keyvault_uri(secret_ref) else get_secret(secret_ref)
         if secret_data:
-            for key in (
-                "username", "password", "host", "port", "database", "uri",
-                "consumer_key", "consumer_secret", "domain", "access_token", "instance_url",
-            ):
+            for key in SECRET_FIELDS:
                 target[key] = target.get(key) or secret_data.get(key)
     return target
 
@@ -112,6 +128,16 @@ def process_single_event(event: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     elif scan_type == "dynamodb":
         scanner = DynamoDBScanner(engine, config)
+        return scanner.scan(target)
+
+    elif scan_type in AZURE_BLOB_SCAN_TYPES:
+        target = resolve_db_credentials(target)
+        scanner = AzureBlobScanner(engine, config)
+        return scanner.scan(target)
+
+    elif scan_type in COSMOS_SCAN_TYPES:
+        target = resolve_db_credentials(target)
+        scanner = CosmosNoSQLScanner(engine, config)
         return scanner.scan(target)
 
     elif scan_type in GDRIVE_SCAN_TYPES:

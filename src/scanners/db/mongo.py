@@ -1,12 +1,16 @@
+import re
+import time
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import quote_plus
 
 # Conditional import for soft failures
 try:
     from pymongo import MongoClient
+    from pymongo.errors import OperationFailure
 except ImportError:
     MongoClient = None
+    OperationFailure = None
 
 from src.pipeline.records import Record, document_record
 from src.scanners.base import BaseScanner
@@ -17,10 +21,17 @@ logger = get_logger(__name__)
 # Databases that hold engine internals rather than user data
 SYSTEM_DATABASES = {"admin", "local", "config"}
 
+# Cosmos DB for MongoDB answers "request rate too large" with this code (HTTP 429 underneath) and
+# a RetryAfterMs hint; the head strategy resumes the read from the last document seen
+THROTTLED_CODE = 16500
+THROTTLE_RETRIES = 8
+_RETRY_AFTER_MS = re.compile(r"RetryAfterMs=(\d+)")
+
 
 class MongoScanner(BaseScanner):
     """
-    Scans MongoDB (and API-compatible stores like DocumentDB) for sensitive data.
+    Scans MongoDB (and API-compatible stores like DocumentDB and Cosmos DB for
+    MongoDB) for sensitive data.
     Discovers databases and collections dynamically, then streams documents as
     Records (one Cell per scalar leaf, dotted field paths as context) into the
     classification pipeline.
@@ -121,6 +132,17 @@ class MongoScanner(BaseScanner):
                 except Exception:
                     pass
 
+    def _throttle_wait(self, error: Exception, retries: int) -> Optional[float]:
+        """Seconds to wait before resuming after a Cosmos DB throttle; None for any other error or when retries are spent."""
+        if OperationFailure is None or not isinstance(error, OperationFailure):
+            return None
+        if getattr(error, "code", None) != THROTTLED_CODE or retries >= THROTTLE_RETRIES:
+            return None
+        match = _RETRY_AFTER_MS.search(str(error))
+        if match:
+            return max(int(match.group(1)) / 1000.0, 0.1)
+        return float(min(2 ** retries, 30))
+
     def _collection_resource_id(self, host: str, db_name: str, coll_name: str) -> str:
         return f"mongodb://{host}/{db_name}/{coll_name}"
 
@@ -180,26 +202,46 @@ class MongoScanner(BaseScanner):
                     f"find({query}, batch_size={batch_size}).limit({sample_limit})",
                 )
 
-        def documents() -> Iterator[Record]:
+        def cursor_from(skip: int):
             if strategy == "random":
                 # $sample is a random draw over the whole collection (Wiz-style statistical sampling)
                 pipeline = ([{"$match": query}] if query else []) + [{"$sample": {"size": sample_limit}}]
-                cursor = db[coll_name].aggregate(pipeline, batchSize=batch_size)
-            else:
-                cursor = db[coll_name].find(query, batch_size=batch_size).limit(sample_limit)
+                return db[coll_name].aggregate(pipeline, batchSize=batch_size)
+            cursor = db[coll_name].find(query, batch_size=batch_size)
+            if skip:
+                cursor = cursor.skip(skip)
+            return cursor.limit(max(sample_limit - skip, 0) if sample_limit else 0)
+
+        def documents() -> Iterator[Record]:
             doc_count = 0
+            retries = 0
             try:
-                for doc_idx, doc in enumerate(cursor):
-                    doc_id = doc.get("_id", f"index {doc_idx}") if isinstance(doc, dict) else f"index {doc_idx}"
-                    # The dotted field path is context for the engine (headers.authorization,
-                    # request.body, labels...), never part of the scanned text
-                    yield document_record(
-                        doc,
-                        lambda path, d=doc_id: (
-                            f"Database '{db_name}', Collection '{coll_name}', Document _id={d}, Field '{path}'"
-                        ),
-                    )
-                    doc_count += 1
+                while True:
+                    if sample_limit and doc_count >= sample_limit:
+                        return
+                    try:
+                        for doc_idx, doc in enumerate(cursor_from(doc_count), start=doc_count):
+                            doc_id = doc.get("_id", f"index {doc_idx}") if isinstance(doc, dict) else f"index {doc_idx}"
+                            # The dotted field path is context for the engine (headers.authorization,
+                            # request.body, labels...), never part of the scanned text
+                            yield document_record(
+                                doc,
+                                lambda path, d=doc_id: (
+                                    f"Database '{db_name}', Collection '{coll_name}', Document _id={d}, Field '{path}'"
+                                ),
+                            )
+                            doc_count += 1
+                        return
+                    except Exception as e:
+                        wait = self._throttle_wait(e, retries)
+                        if wait is None or strategy == "random":
+                            raise
+                        retries += 1
+                        logger.warning(
+                            f"Cosmos DB throttled {db_name}.{coll_name} (code {THROTTLED_CODE}); "
+                            f"retry {retries}/{THROTTLE_RETRIES} in {wait:.1f}s from document {doc_count}",
+                        )
+                        time.sleep(wait)
             finally:
                 self.stats["documents_scanned"] += doc_count
 

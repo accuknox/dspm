@@ -5,8 +5,10 @@ from urllib.parse import quote_plus
 try:
     from sqlalchemy import create_engine, inspect, select, tablesample, text as sql_text
     from sqlalchemy import table as sql_table, column as sql_column
+    from sqlalchemy.engine import make_url
 except ImportError:
     create_engine = None
+    make_url = None
 
 from src.pipeline.records import COLUMNAR, Cell, Record
 from src.scanners.base import BaseScanner
@@ -75,6 +77,8 @@ class SQLScanner(BaseScanner):
             "database": "production",               # pragma: allowlist secret
             "connection_string": "postgresql+psycopg2://...",  # optional, overrides the fields above
             "connect_args": {"sslmode": "require"},  # optional, extra DBAPI args (TLS etc.)
+            "auth": "azure_entra",           # optional: Azure Database for PostgreSQL / MySQL Flexible Server with
+                                             # Microsoft Entra: the scanner identity's token is the password
             "schema": "public",              # optional, restrict to a single schema
             "tables": ["users", "sales.orders"],  # optional, restrict to specific tables
             "include_views": false,          # optional, also scan views
@@ -114,6 +118,8 @@ class SQLScanner(BaseScanner):
             if owns_engine:
                 connect_args = {**self._connect_args(conn_str), **(target.get("connect_args") or {})}
                 sa_engine = create_engine(conn_str, connect_args=connect_args)
+                if str(target.get("auth") or "").lower() == "azure_entra":
+                    self._use_entra_tokens(sa_engine)
             inspector = inspect(sa_engine)
 
             for schema in self._discover_schemas(sa_engine, inspector, target, database):
@@ -176,13 +182,47 @@ class SQLScanner(BaseScanner):
             return conn_str
         return f"{driver}://{rest}"
 
+    def _use_entra_tokens(self, sa_engine: Any) -> Callable[..., None]:
+        """
+        Azure Database for PostgreSQL / MySQL Flexible Server with Microsoft Entra
+        authentication: the password of every new DBAPI connection is a fresh access
+        token for the scanner identity (src.utils.azure.entra_db_token). Tokens live
+        about an hour and each relation opens its own connection, so long scans keep
+        working; the username stays the identity's name on the server.
+        """
+        from sqlalchemy import event
+
+        from src.utils.azure import entra_db_token
+
+        def provide_token(dialect, conn_rec, cargs, cparams):
+            cparams["password"] = entra_db_token()
+
+        event.listen(sa_engine, "do_connect", provide_token)
+        return provide_token
+
     def _connect_args(self, conn_str: str) -> Dict[str, Any]:
         timeout = self.config.get("connect_timeout", 10)
         if conn_str.startswith(("postgresql", "mysql", "mariadb")):
-            return {"connect_timeout": timeout}
+            args = {"connect_timeout": timeout}
+            if conn_str.startswith("mysql") and self._is_azure_mysql(conn_str):
+                # Azure Database for MySQL Flexible Server only accepts TLS. PyMySQL negotiates it on its
+                # own but does not check the server certificate unless asked: verify it against the system
+                # CA bundle (DigiCert Global Root G2). A DSN with its own ssl_* options is left alone.
+                args.update({"ssl_verify_cert": True, "ssl_verify_identity": True})
+            return args
         if conn_str.startswith("mssql+pymssql"):
             return {"login_timeout": timeout}
         return {}
+
+    def _is_azure_mysql(self, conn_str: str) -> bool:
+        """A *.mysql.database.azure.com host whose DSN carries no TLS options of its own."""
+        if "ssl" in conn_str.partition("?")[2] or make_url is None:
+            return False
+        try:
+            host = make_url(conn_str).host or ""
+        except Exception:
+            return False
+        return host.lower().endswith(".mysql.database.azure.com")
 
     def _is_system_schema(self, schema: str) -> bool:
         if not schema:

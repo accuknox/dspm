@@ -553,3 +553,81 @@ def test_mongo_random_sampling_uses_sample_stage():
     pipeline = coll_mock.aggregate.call_args.args[0]
     assert pipeline == [{"$sample": {"size": 500}}]
     coll_mock.find.assert_not_called()
+
+
+@patch("boto3.client")
+def test_s3_scanner_iter_scan_skips_empty_and_oversized_objects(mock_boto_client):
+    def mock_download(bucket, key, path, **kwargs):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("Admin password: SecretPassword123!\nUser email: john.doe@accuknox.com\n")
+
+    s3_mock = MagicMock()
+    s3_mock.download_file.side_effect = mock_download
+    s3_mock.get_paginator.return_value.paginate.return_value = [{
+        "Contents": [
+            {"Key": "a.txt", "Size": 70}, {"Key": "folder/", "Size": 0},
+            {"Key": "huge.bin", "Size": 200 * 1024 * 1024}, {"Key": "b.txt", "Size": 70, "VersionId": "v2"},
+        ],
+    }]
+    scanner = S3Scanner(DetectionEngine(), client=s3_mock)
+    units = list(scanner.iter_scan({"bucket": "b", "prefix": "exports/"}))
+
+    assert [key for _, key, _ in units] == ["a.txt", "b.txt"]
+    assert units[0][0] == "arn:aws:s3:::b/a.txt"
+    assert all({f["detector"] for f in findings} == {"Password Pattern", "Email"} for _, _, findings in units)
+    assert s3_mock.get_paginator.return_value.paginate.call_args.kwargs == {"Bucket": "b", "Prefix": "exports/"}
+    assert s3_mock.download_file.call_args_list[1].kwargs == {"ExtraArgs": {"VersionId": "v2"}}
+    assert scanner.stats == {"objects_scanned": 2, "objects_skipped": 2, "errors": 0}
+    mock_boto_client.assert_not_called()  # the injected client serves the listing and every download
+
+    # a target with "key" scans that one object
+    units = list(scanner.iter_scan({"bucket": "b", "key": "a.txt"}))
+    assert [key for _, key, _ in units] == ["a.txt"] and units[0][0] == "arn:aws:s3:::b/a.txt"
+
+
+def test_mongo_scanner_resumes_after_cosmos_throttling():
+    from pymongo.errors import OperationFailure
+
+    docs = [{"_id": f"u{i}", "email": f"user{i}@accuknox.com"} for i in range(4)]
+
+    def failing_after(items, fail_at):
+        for idx, doc in enumerate(items):
+            if idx == fail_at:
+                raise OperationFailure("Error=16500, RetryAfterMs=250, Details={...}", code=16500)
+            yield doc
+
+    coll_mock = MagicMock()
+    coll_mock.find.return_value.limit.return_value = failing_after(docs, 2)            # throttled after two documents
+    coll_mock.find.return_value.skip.return_value.limit.return_value = iter(docs[2:])  # the resumed read
+    db_mock = MagicMock()
+    db_mock.list_collection_names.return_value = ["users"]
+    db_mock.__getitem__.return_value = coll_mock
+    client_mock = MagicMock()
+    client_mock.__getitem__.return_value = db_mock
+
+    scanner = MongoScanner(DetectionEngine(), client=client_mock)
+    with patch("src.scanners.db.mongo.time.sleep") as sleep:
+        findings = scanner.scan({"host": "acct.mongo.cosmos.azure.com", "database": "appdb", "sample_limit": 100})
+    assert sleep.call_args.args == (0.25,)  # the server's RetryAfterMs hint
+    assert coll_mock.find.return_value.skip.call_args.args == (2,)
+    assert coll_mock.find.return_value.skip.return_value.limit.call_args.args == (98,)
+    assert scanner.stats["documents_scanned"] == 4 and scanner.stats["errors"] == 0
+    assert {f["detector"] for f in findings} == {"Email"}
+
+    # a throttle that never clears is reported as a read error after the retries are spent
+    coll_mock.find.return_value.limit.side_effect = lambda n: failing_after(docs, 0)
+    scanner = MongoScanner(DetectionEngine(), client=client_mock)
+    with patch("src.scanners.db.mongo.time.sleep") as sleep:
+        scanner.scan({"host": "acct.mongo.cosmos.azure.com", "database": "appdb"})
+    assert sleep.call_count == 8 and scanner.stats["errors"] == 1
+
+
+def test_sql_connect_args_verify_tls_for_azure_mysql():
+    scanner = SQLScanner(DetectionEngine())
+    args = scanner._connect_args("mysql+pymysql://u:p@srv.mysql.database.azure.com:3306/db")
+    assert args == {"connect_timeout": 10, "ssl_verify_cert": True, "ssl_verify_identity": True}
+    # a DSN that carries its own TLS options, or any other host, is left alone
+    pinned = "mysql+pymysql://u:p@srv.mysql.database.azure.com/db?ssl_ca=/etc/ssl/certs/ca-certificates.crt"
+    assert scanner._connect_args(pinned) == {"connect_timeout": 10}
+    assert scanner._connect_args("mysql+pymysql://u:p@mysql.internal:3306/db") == {"connect_timeout": 10}
+    assert scanner._connect_args("postgresql+psycopg2://u:p@srv.postgres.database.azure.com/db") == {"connect_timeout": 10}
