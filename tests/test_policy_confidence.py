@@ -56,7 +56,7 @@ def test_engine_reporting_tier_and_legacy_threshold():
 
 
 def test_every_detector_resolves_to_a_policy():
-    mapping = json.loads((ROOT / "fixtures" / "findings-mapping.json").read_text())
+    mapping = json.loads((ROOT / "fixtures" / "findings-mapping-v2.json").read_text())
     mapping = mapping[0] if isinstance(mapping, list) else mapping
     for name, entry in mapping.items():
         policy = policy_for(name, entry["category"])

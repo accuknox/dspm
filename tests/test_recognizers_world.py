@@ -49,7 +49,7 @@ def test_examples_validate_and_mutations_are_rejected():
 
 
 def test_packs_are_region_gated_and_mapped():
-    mapping = json.loads((Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping.json").read_text())[0]
+    mapping = json.loads((Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping-v2.json").read_text())[0]
     names = {r.name for r in load_all()}
     assert len(names) == len(load_all()) and len(regions()) >= 60
     for rule in _new_rules():
@@ -118,7 +118,7 @@ def test_column_of_national_ids_classifies_with_every_pack():
 
 def test_new_vendor_secret_formats():
     from src.engine import tokens as tk
-    mapping = json.loads((Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping.json").read_text())[0]
+    mapping = json.loads((Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping-v2.json").read_text())[0]
     engine = DetectionEngine()
     checked = 0
     for name in (
@@ -136,7 +136,7 @@ def test_new_vendor_secret_formats():
 
 def test_every_vendor_format_passes_its_prefilter():
     from src.engine import tokens as tk
-    mapping = json.loads((Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping.json").read_text())[0]
+    mapping = json.loads((Path(__file__).resolve().parent.parent / "fixtures" / "findings-mapping-v2.json").read_text())[0]
     misses = []
     for name in {n for n, _ in tk.VENDOR_TOKEN_RULES}:
         hits = {d for d, *_ in tk.find_vendor_tokens("x = " + mapping[name]["sample_value"])}

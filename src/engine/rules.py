@@ -138,10 +138,50 @@ class Rule:
         return best >= threshold
 
 
+# Words a run-together field name may be made of: 'familynamefemale' -> family name female,
+# 'keystorepassword' -> key store password. A token is split only when every piece is a known word.
+_FIELD_VOCAB = frozenset(
+    """
+account address api auth authorization bank bearer beneficiary billing birth card cardholder cell chart city client
+code contact country county credit current customer date debit device dob driver email employee family fax female
+first full gender given health holder home iban id identity imei insurance key last license licence login mac male
+master medical member middle mobile mrn name national new nonbinary number old owner passport password patient
+phone pin plan policy postal pwd record routing secret security shipping social ssn state store street subscriber
+sur swift tax telephone token user visa work zip
+""".split(),
+)
+_SEGMENT_MIN = 3
+
+
+def _segment(token: str) -> Optional[List[str]]:
+    """Greedy-with-backtracking split of a run-together token into known words, or None."""
+    if len(token) < 2 * _SEGMENT_MIN or not token.isalpha():
+        return None
+    best: Dict[int, Optional[List[str]]] = {len(token): []}
+
+    def walk(pos: int) -> Optional[List[str]]:
+        if pos in best:
+            return best[pos]
+        result = None
+        for end in range(len(token), pos + 1, -1):
+            piece = token[pos:end]
+            if len(piece) < 2 or piece not in _FIELD_VOCAB:
+                continue
+            rest = walk(end)
+            if rest is not None:
+                result = [piece] + rest
+                break
+        best[pos] = result
+        return result
+
+    words = walk(0)
+    return words if words and len(words) >= 2 else None
+
+
 def tokenize_field_name(field_name: Optional[str]) -> List[str]:
     """
     'api_event.http.request.headers.authorization' -> ['api', 'event', 'http', ...]
-    'customerSSN' -> ['customer', 'ssn']; 'zipCode' -> ['zip', 'code']
+    'customerSSN' -> ['customer', 'ssn']; 'zipCode' -> ['zip', 'code']; 'keystorepassword' -> ['key', 'store', 'password']
     """
     if not field_name:
         return []
@@ -151,7 +191,8 @@ def tokenize_field_name(field_name: Optional[str]) -> List[str]:
             continue
         for token in _CAMEL_RE.split(chunk):
             if token:
-                parts.append(token.lower())
+                lowered = token.lower()
+                parts.extend(_segment(lowered) or [lowered])
     return parts
 
 
@@ -211,7 +252,8 @@ def run_rule(rule: Rule, text: str, field_name: Optional[str] = None) -> List[Di
 
     for pattern in rule.patterns:
         for match in pattern.compiled.finditer(text):
-            start, end = match.span()
+            # a labelled pattern names its value with (?P<v>...): the label is matched, the value is reported
+            start, end = match.span("v") if "v" in match.groupdict() and match.group("v") else match.span()
             value = text[start:end]
             if not value:
                 continue
@@ -227,6 +269,8 @@ def run_rule(rule: Rule, text: str, field_name: Optional[str] = None) -> List[Di
                 continue
 
             context_word = find_context_word(rule, text, start, end, field_name)
+            if context_word is None and (start, end) != match.span():
+                context_word = text[match.start():start].strip(" :#-|\t") or pattern.name  # the label is the context
             if context_word is not None:
                 score = min(1.0, max(score + rule.context_boost, rule.min_score_with_context))
             if field_hint_hit:

@@ -395,6 +395,207 @@
       "purpose": "Clean prose remains clean.",
       "text": "The deployment completed successfully. No action is required.",
       "expected": []
+    },
+    {
+      "id": "phone_labelled_in_prose",
+      "purpose": "A national-format number next to its own keyword is a phone wherever it sits in the text.",
+      "text": "Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Notes follow. Phone Number: 205-897-7208",
+      "expected": [
+        {
+          "detector": "Phone Number",
+          "value": "205-897-7208",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "ledger_reference_is_not_a_phone",
+      "purpose": "A bare national-format digit run with no phone keyword is not reported.",
+      "text": "ref 205-897-7208 in the ledger",
+      "expected": []
+    },
+    {
+      "id": "dob_day_first_and_written",
+      "purpose": "Dates of birth in day-first and written-month forms carry the birth keyword.",
+      "text": "Date of Birth: 12/08/1985. Born on 3 March 1979.",
+      "expected": [
+        {
+          "detector": "Date of Birth",
+          "value": "12/08/1985",
+          "location": "text"
+        },
+        {
+          "detector": "Date of Birth",
+          "value": "3 March 1979",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "invoice_date_is_not_a_birth_date",
+      "purpose": "A day-first date without a birth keyword stays silent.",
+      "text": "invoice 12/08/1985 total 40.00",
+      "expected": []
+    },
+    {
+      "id": "medical_record_number_labelled",
+      "purpose": "A medical record number labelled in words is reported as the number alone.",
+      "text": "Medical Record Number: 0004973621 was reviewed",
+      "expected": [
+        {
+          "detector": "MEDICAL_RECORD_NUMBER",
+          "value": "0004973621",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "health_plan_member_id_labelled",
+      "purpose": "A health plan beneficiary number, digits or letters, is reported when its label precedes it.",
+      "text": "Health Plan Beneficiary Number: 245 876 1234. Also beneficiary number G172864593 at the hospital.",
+      "expected": [
+        {
+          "detector": "US_HEALTH_INSURANCE_MEMBER_ID",
+          "value": "245 876 1234",
+          "location": "text"
+        },
+        {
+          "detector": "US_HEALTH_INSURANCE_MEMBER_ID",
+          "value": "G172864593",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "passport_and_licence_labelled",
+      "purpose": "Labelled passport and driver licence numbers are reported as the number alone.",
+      "text": "Passport Number: B31498009. Driver's License Number: H8477831.",
+      "expected": [
+        {
+          "detector": "US_PASSPORT",
+          "value": "B31498009",
+          "location": "text"
+        },
+        {
+          "detector": "US_DRIVER_LICENSE",
+          "value": "H8477831",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "names_labelled_in_prose",
+      "purpose": "Unquoted name labels in prose and markdown report the name.",
+      "text": "**First Name**: Facundo  **Last Name**: Fernandez. Borrower: Natasha Justin Ellis.",
+      "expected": [
+        {
+          "detector": "PII.PersonName",
+          "value": "Facundo",
+          "location": "text"
+        },
+        {
+          "detector": "PII.PersonName",
+          "value": "Fernandez",
+          "location": "text"
+        },
+        {
+          "detector": "PII.PersonName",
+          "value": "Natasha Justin Ellis",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "uppercase_word_is_not_a_swift_code",
+      "purpose": "An 8-letter English word next to a generic bank word is not a SWIFT code; an explicit label is.",
+      "text": "bank transfer from BUSINESS account. SWIFT: DEUTDEFF",
+      "expected": [
+        {
+          "detector": "SWIFT/BIC",
+          "value": "DEUTDEFF",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "run_together_field_names",
+      "purpose": "Run-together field names are segmented into the words the field rules know.",
+      "rows": [
+        {
+          "fullnamefemale": "Whitney Dixion",
+          "keystorepassword": "eigahYe7se",
+          "latitude": "-28.323485",
+          "version": "1.4.2"
+        }
+      ],
+      "expected": [
+        {
+          "detector": "PII.PersonName",
+          "value": "Whitney Dixion",
+          "location": "row:0:fullnamefemale"
+        },
+        {
+          "detector": "Password Pattern",
+          "value": "eigahYe7se",
+          "location": "row:0:keystorepassword"
+        },
+        {
+          "detector": "GEO_COORDINATES",
+          "value": "-28.323485",
+          "location": "row:0:latitude"
+        }
+      ]
+    },
+    {
+      "id": "coordinate_pair_forms",
+      "purpose": "Space-separated and hemisphere coordinate pairs count next to a location keyword.",
+      "text": "location 40.7128 -74.0060; coordinates 35.7790 N, 78.6382 W",
+      "expected": [
+        {
+          "detector": "GEO_COORDINATES",
+          "value": "40.7128 -74.0060",
+          "location": "text"
+        },
+        {
+          "detector": "GEO_COORDINATES",
+          "value": "35.7790 N, 78.6382 W",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "single_names_under_plain_labels",
+      "purpose": "Unstarred first and last name labels report single names; a thing-owned Name label does not.",
+      "text": "First Name: Facundo\nLast Name: Fernandez\nBank Name: First National Bank\nCustomer Name: Priya Sharma",
+      "expected": [
+        {
+          "detector": "PII.PersonName",
+          "value": "Facundo",
+          "location": "text"
+        },
+        {
+          "detector": "PII.PersonName",
+          "value": "Fernandez",
+          "location": "text"
+        },
+        {
+          "detector": "PII.PersonName",
+          "value": "Priya Sharma",
+          "location": "text"
+        }
+      ]
+    },
+    {
+      "id": "passwords_stated_in_prose",
+      "purpose": "A password stated in a sentence is reported; a sentence about passwords is not.",
+      "text": "Your temporary password is Xk9#pq2L and expires tonight. The password is required on every login. Password was reset by the admin.",
+      "expected": [
+        {
+          "detector": "Password Pattern",
+          "value": "Xk9#pq2L",
+          "location": "text"
+        }
+      ]
     }
   ]
 }

@@ -84,7 +84,7 @@ def test_all_expected_rules_present_and_unique():
 
 
 def test_rules_match_findings_mapping():
-    with open(ROOT / "fixtures" / "findings-mapping.json", encoding="utf-8") as fh:
+    with open(ROOT / "fixtures" / "findings-mapping-v2.json", encoding="utf-8") as fh:
         mapping = json.load(fh)[0]
     for rule in RULES:
         assert rule.name in mapping, rule.name

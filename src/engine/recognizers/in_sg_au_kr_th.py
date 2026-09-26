@@ -481,6 +481,7 @@ RULES: List[Rule] = [
         ],
         context=["passport", "indian passport", "passport number"],
         field_hint=r"passport",
+        min_score_with_context=0.8,  # a specific 8-character shape next to "passport" is likely, not merely possible
         examples=("A3456781", "T3569075"),
     ),
     Rule(
@@ -532,6 +533,7 @@ RULES: List[Rule] = [
         ],
         context=["voter", "epic", "elector photo identity card"],
         field_hint=r"voter|(?<![a-z])epic(?![a-z])",
+        min_score_with_context=0.8,
         examples=("KSD1287349", "DBJ2289013", "CPJ4467918"),
     ),
     # ------------------------------------------------------------------ SG --

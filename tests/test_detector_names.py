@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def _mapping():
-    data = json.loads((ROOT / "fixtures" / "findings-mapping.json").read_text())
+    data = json.loads((ROOT / "fixtures" / "findings-mapping-v2.json").read_text())
     return data[0] if isinstance(data, list) else data
 
 

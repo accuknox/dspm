@@ -205,9 +205,28 @@ def validate_email(email: str) -> Optional[str]:
 
 
 LOOSE_PHONE_RE = re.compile(r"\+?\(?\d[\d\s().\-/]{5,22}\d")
-DOB_REGEX = re.compile(r"\b(19|20)\d{2}[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b")
+_MONTHS = r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?"
+DOB_REGEX = re.compile(
+    r"\b(?:(?:19|20)\d{2}[-/.](?:0[1-9]|1[0-2])[-/.](?:0[1-9]|[12]\d|3[01])"            # 1985-08-12
+    r"|(?:0?[1-9]|[12]\d|3[01])[-/.](?:0?[1-9]|1[0-2])[-/.](?:19|20)\d{2}"               # 12/08/1985, 8-12-1985
+    r"|(?:0?[1-9]|[12]\d|3[01])(?:st|nd|rd|th)?\s+" + _MONTHS + r",?\s+(?:19|20)\d{2}"   # 12 August 1985
+    r"|" + _MONTHS + r"\s+(?:0?[1-9]|[12]\d|3[01])(?:st|nd|rd|th)?,?\s+(?:19|20)\d{2})\b",  # August 12, 1985
+    re.IGNORECASE,
+)
+_DOB_YEAR_RE = re.compile(r"(?:19|20)\d{2}")
 DOB_MIN_YEAR = 1930
 DOB_MAX_YEAR = 2012
+
+
+def _dob_year(value: str) -> Optional[int]:
+    """The four-digit year of a date match, or None for an implausible numeric day/month pair."""
+    numeric = re.fullmatch(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", value)
+    if numeric:
+        a, b = int(numeric.group(1)), int(numeric.group(2))
+        if not (1 <= a <= 31 and 1 <= b <= 31 and min(a, b) <= 12):
+            return None
+    found = _DOB_YEAR_RE.search(value)
+    return int(found.group(0)) if found else None
 
 # Street addresses: "<number> <Name words> <street type>[, more]" - the street
 # type must be a whole word, so 'broadcast', 'roadmap' and 'BlockRootUser' never trigger
@@ -276,7 +295,18 @@ def looks_like_person_name(value: str) -> bool:
         return False
     if v.lower() in {"null", "none", "test", "admin", "user", "unknown", "n/a", "na", "root", "guest", "anonymous", "default", "system", "name", "desc", "string", "value", "true", "false", "undefined"}:
         return False
+    if ORGANISATION_WORD_RE.search(v):  # "Global Trust Bank", "Acme Holdings Ltd" are organisations, not people
+        return False
     return True
+
+
+ORGANISATION_WORD_RE = re.compile(
+    r"(?:^|\s)(?:bank|trust|holdings?|group|ltd|limited|inc|llc|llp|plc|corp|corporation|company|co|gmbh|ag|sa|pvt|pty|"
+    r"enterprises?|industries|partners|associates|solutions|services|systems|technologies|labs|motors|farms?|foundation|"
+    r"institute|university|college|hospital|clinic|insurance|capital|investments?|ventures|fund|agency|council|ministry|"
+    r"department|authority|association|federation|union|church|school|store|market|hotel|airlines?|logistics|consulting)\.?$",
+    re.IGNORECASE,
+)
 
 
 def _mask_name(value: str) -> str:
@@ -316,13 +346,17 @@ def scan_pii(
             findings.append(_finding("Phone Number", _CATEGORY_PII, "Medium", raw, score, match.start, match.end))
     except Exception:
         pass
-    if phone_regions and (phone_context or near(text, 0, min(len(text), 200), CONTEXT_WORDS["Phone Number"])):
+    if phone_regions:
         for region in phone_regions:
             try:
                 for match in phonenumbers.PhoneNumberMatcher(text, region.upper(), leniency=phonenumbers.Leniency.VALID):
                     if (match.start, match.end) in seen_spans:
                         continue
                     seen_spans.add((match.start, match.end))
+                    # the keyword must sit next to the number, not somewhere in the first 200 characters;
+                    # a bare national-format digit run is left to the checksum detectors (NHS, SSN, accounts)
+                    if not (phone_context or near(text, match.start, match.end, CONTEXT_WORDS["Phone Number"])):
+                        continue
                     findings.append(_finding("Phone Number", _CATEGORY_PII, "Medium", match.raw_string, 0.85, match.start, match.end, region=region.upper()))
             except Exception:
                 continue
@@ -338,8 +372,8 @@ def scan_pii(
 
     # 3. Dates of birth: plausible year range + birth context or field
     for match in DOB_REGEX.finditer(text):
-        year = int(match.group(0)[:4])
-        if not (DOB_MIN_YEAR <= year <= DOB_MAX_YEAR):
+        year = _dob_year(match.group(0))
+        if year is None or not (DOB_MIN_YEAR <= year <= DOB_MAX_YEAR):
             continue
         score = 0.4
         if field_hints("Date of Birth", field_name) or near(text, match.start(), match.end(), CONTEXT_WORDS["Date of Birth"]):
@@ -430,6 +464,22 @@ def scan_addresses(text: str, field_name: Optional[str] = None) -> list:
 
 
 _SINGLE_NAME_FIELD_RE = re.compile(r"\b(?:first|last|given|family|middle|sur) ?name\b")
+# a name label in prose or markdown, unquoted: "First Name: Facundo", "**Patient Name**: Ana Rojas", "Name: Scott A. Smith"
+# "Bank Name", "Employer Name", "Campaign Name": a bare "name" label owned by a thing, not a person
+NON_PERSON_NAME_QUALIFIERS = {
+    "company", "business", "employer", "farm", "bank", "account", "campaign", "product", "project", "brand", "store",
+    "vendor", "supplier", "organisation", "organization", "institution", "fund", "trust", "school", "hospital", "clinic",
+    "team", "group", "plan", "policy", "file", "user", "host", "domain", "server", "table", "column", "field", "display",
+    "screen", "model", "device", "app", "application", "service", "agency", "firm", "corporation", "entity", "branch",
+    "merchant", "issuer", "carrier", "insurer", "ship", "vessel", "property", "estate", "building", "street", "road",
+}
+NAME_KEYS_PROSE_RE = re.compile(
+    r"(?<![A-Za-z])(?i:\**(?P<key>first name|last name|surname|given name|family name|middle name|full name|patient name|"
+    r"customer name|employee name|applicant name|account holder|cardholder name|contact name|name|borrower|co-borrower|guarantor|"
+    r"insured|consignee|shipper|buyer|seller|tenant|landlord|beneficiary|shareholder|signatory|attorney|client|patient|employee|"
+    r"customer|applicant|holder|spouse|dependent|witness)\**)\s*[:\-]\s*"
+    r"(?P<val>(?:[A-Z]\.|[A-Z][A-Za-z'\u2019\-]+)(?:[ \t](?:[A-Z]\.|[A-Z][A-Za-z'\u2019\-]+)){0,3})(?![A-Za-z])",
+)
 
 
 def scan_person_names(text: str, field_name: Optional[str] = None) -> list:
@@ -445,6 +495,20 @@ def scan_person_names(text: str, field_name: Optional[str] = None) -> list:
         key_single = _SINGLE_NAME_FIELD_RE.search(match.group("key").lower().replace("_", " ")) is not None
         if looks_like_person_name(val) and (key_single or len(val.split()) >= 2):
             findings.append(_finding("PII.PersonName", _CATEGORY_PII, "Low", val, 0.85, match.start("val"), match.end("val"), masked=_mask_name(val), key=match.group("key")))
+    taken = [(f["start"], f["end"]) for f in findings]
+    for match in NAME_KEYS_PROSE_RE.finditer(text):
+        val = match.group("val").strip().rstrip(".")
+        if any(s <= match.start("val") < e for s, e in taken):
+            continue
+        key = match.group("key").lower()
+        if key == "name":  # the word in front decides: "Patient Name" is a person, "Bank Name" is not
+            before = text[max(0, match.start("key") - 40):match.start("key")]
+            qualifier = re.findall(r"[A-Za-z]+", before)
+            if qualifier and qualifier[-1].lower() in NON_PERSON_NAME_QUALIFIERS:
+                continue
+        key_single = key != "name" and _SINGLE_NAME_FIELD_RE.search(key) is not None
+        if looks_like_person_name(val) and (key_single or len(val.split()) >= 2):
+            findings.append(_finding("PII.PersonName", _CATEGORY_PII, "Low", val, 0.85, match.start("val"), match.end("val"), masked=_mask_name(val), key=match.group("key")))
     return findings
 
 
@@ -455,6 +519,12 @@ def scan_person_names(text: str, field_name: Optional[str] = None) -> list:
 PASSWORD_REGEX = re.compile(
     r"(?i)(?<![A-Za-z])(password|passwd|passwort|passphrase|passcode|pwd|pswd|db_?pass|admin_?pass|user_?pass|root_?pass)s?(?![A-Za-z])"
     r"\s*[:=>]+\s*[\"']?([^\s\"',;]{1,128})",
+)
+# Passwords stated in prose: "the password is hunter2!", "temporary password: Xk9#pq2L", "your new passcode will be ..."
+PASSWORD_PROSE_REGEX = re.compile(
+    r"(?i)(?<![A-Za-z])(?:(?:temporary|temp|new|initial|default|current|old|login|account|wifi|wi-fi|admin|root|user|your|the)\s+)?"
+    r"(?:password|passcode|passphrase|pwd)\s+(?:is|was|will be|should be|has been set to|is set to|set to|remains)\s*[:=]?\s*"
+    r"[\"'\u201c\u2018]?(?P<val>[^\s\"'\u201d\u2019,;]{6,128})",
 )
 API_KEY_REGEX = re.compile(
     r"(?i)(?<![A-Za-z])(api[_-]?key|apikey|x-api-key|api[_-]?secret|app[_-]?key|app[_-]?secret|consumer[_-]?key|consumer[_-]?secret|"
@@ -584,6 +654,16 @@ def scan_credentials(text: str, field_name: Optional[str] = None) -> list:
         if tk.is_example_password(value) and not field_hints("Password Pattern", field_name):
             score = 0.7  # hunter2 / P@ssw0rd in advisory text
         add("Password Pattern", value, match.start(2), match.start(2) + len(value), score)
+
+    # Passwords stated in prose; the value must look like a secret (a digit or symbol, or mixed case), never a plain word
+    for match in PASSWORD_PROSE_REGEX.finditer(text):
+        value = match.group("val").rstrip(",.;:)")
+        if any(f["start"] <= match.start("val") < f["end"] for f in findings):
+            continue
+        if _password_value_ok(value, 6) or not (any(c.isdigit() or not c.isalnum() for c in value) or (not value.islower() and not value.isupper())):
+            continue
+        score = 0.7 if tk.is_example_password(value) else 0.85
+        add("Password Pattern", value, match.start("val"), match.start("val") + len(value), score)
 
     # Password hashes anywhere (bcrypt/argon2/crypt/pbkdf2/ldap are self-describing)
     for match in PASSWORD_HASH_RE.finditer(text):
@@ -730,6 +810,7 @@ CREDIT_CARD_REGEX = re.compile(
 )
 IBAN_REGEX = re.compile(r"\b[A-Z]{2}[0-9]{2}(?:[ -]?[A-Z0-9]{4}){2,7}(?:[ -]?[A-Z0-9]{1,4})?\b")
 SWIFT_REGEX = re.compile(r"\b[A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b")
+SWIFT_EXPLICIT_WORDS = ["swift", "bic", "swift code", "bic code", "bank identifier"]
 BANK_ACCOUNT_REGEX = re.compile(r"(?<![\d-])\d{8,18}(?![\d-])")
 BANK_ACCOUNT_KEYWORDS = CONTEXT_WORDS["Bank Account"]
 BANK_NEGATIVE_KEYWORDS = ["aws", "arn", "subscription", "project", "tenant", "account id", "accountid", "customer id", "order", "invoice", "transaction id", "cluster", "namespace"]
@@ -816,8 +897,10 @@ def scan_financial(text: str, field_name: Optional[str] = None) -> list:
         if any(f["start"] <= match.start() and match.end() <= f["end"] for f in findings):
             continue  # inside an IBAN
         score = 0.5
-        if field_hints("SWIFT/BIC", field_name) or near(text, match.start(), match.end(), CONTEXT_WORDS["SWIFT/BIC"]):
-            score = 0.85
+        explicit = field_hints("SWIFT/BIC", field_name) or near(text, match.start(), match.end(), SWIFT_EXPLICIT_WORDS, before=40, after=10)
+        generic = near(text, match.start(), match.end(), CONTEXT_WORDS["SWIFT/BIC"])
+        if explicit or (generic and any(c.isdigit() for c in val)):
+            score = 0.85  # "TRANSFER" next to "bank" is a word; "DEUTDEFF" next to "SWIFT" is a code
         findings.append(_finding("SWIFT/BIC", _CATEGORY_FIN, "High", val, score, match.start(), match.end()))
 
     # 4. Bank account numbers: digit runs with bank context, not cloud account ids

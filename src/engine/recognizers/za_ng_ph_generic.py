@@ -1252,7 +1252,7 @@ IP_ADDRESS = Rule(
 # MAC address (mac_recognizer.py)
 # ---------------------------------------------------------------------------
 def _invalidate_mac_address(pattern_text: str) -> bool:
-    cleaned = re.sub(r"[:\-.]", "", pattern_text)
+    cleaned = re.sub(r"[:\-. ]", "", pattern_text)
 
     # All characters must be valid hex
     if re.fullmatch(r"[0-9A-Fa-f]{12}", cleaned) is None:
@@ -1274,7 +1274,7 @@ MAC_ADDRESS = Rule(
     patterns=[
         Pattern(
             "MAC_COLON_OR_HYPHEN",
-            r"\b[0-9A-Fa-f]{2}([:-])(?:[0-9A-Fa-f]{2}\1){4}[0-9A-Fa-f]{2}\b",
+            r"\b[0-9A-Fa-f]{2}([:\- ])(?:[0-9A-Fa-f]{2}\1){4}[0-9A-Fa-f]{2}\b",
             0.6,
         ),
         Pattern(
