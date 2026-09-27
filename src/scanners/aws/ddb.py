@@ -18,8 +18,9 @@ class DynamoDBScanner(BaseScanner):
     DynamoDB Streams.
     """
 
-    def __init__(self, engine, config: Dict[str, Any] = None):
-        super().__init__(engine, config)
+    def __init__(self, engine, config: Dict[str, Any] = None, client=None):
+        # An injected client (the worker builds one with its credential rules) wins over the ambient chain
+        super().__init__(engine, config, client)
         self.deserializer = TypeDeserializer()
         self.stats = {"tables_scanned": 0, "items_scanned": 0, "errors": 0}
 
@@ -40,7 +41,7 @@ class DynamoDBScanner(BaseScanner):
 
         limit = target.get("sample_limit", 10000)
         try:
-            ddb_client = (
+            ddb_client = self.client or (
                 boto3.client("dynamodb", region_name=region)
                 if region
                 else boto3.client("dynamodb")

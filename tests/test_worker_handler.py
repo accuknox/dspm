@@ -218,8 +218,11 @@ def test_worker_target_parsing_and_guards():
         response = handler.lambda_handler()
     assert response["statusCode"] == 200 and json.loads(response["body"])["message"] == "No objects to scan"
 
-    # AWS_ACCOUNT_ID is only required when an S3 target is configured
+    # AWS_ACCOUNT_ID is only required when an S3 or DynamoDB target is configured
     stack, _ = _isolated(OBJECT_NAME="b1", OBJECT_TYPE="s3")
+    with stack:
+        assert handler.lambda_handler()["statusCode"] == 400
+    stack, _ = _isolated(OBJECT_NAME="users", OBJECT_TYPE="DYNAMODB")
     with stack:
         assert handler.lambda_handler()["statusCode"] == 400
     # AZURE_SUBSCRIPTION_ID likewise for Azure Blob targets
@@ -375,3 +378,61 @@ def test_worker_cosmos_and_azure_database_aliases():
         handler.process_bucket("crm", "COSMOS_MONGO")
     target = mongo.iter_scan.call_args.args[0]
     assert target["uri"].startswith("mongodb://") and target["host"] == "acct.mongo.cosmos.azure.com" and "auth" not in target
+
+
+def test_worker_dynamodb_scan_layout():
+    # One table is one unit, like a relation or a collection; findings are attributed to the AWS account
+    ddb = MagicMock()
+    ddb.stats = {"tables_scanned": 1, "items_scanned": 2, "errors": 0}
+    ddb.scan.return_value = [{
+        "resource_id": "arn:aws:dynamodb:ap-south-1:table/users", "detector": "Email", "category": "PII",
+        "severity": "medium", "value": "e@corp.com", "location": "Attribute 'email' (2 matches)",
+    }]
+    ddb.dedup_findings.side_effect = lambda findings: findings
+    stack, findings_dir = _isolated(AWS_ACCOUNT_ID="123456789012", AWS_ACCESS_KEY_ID="AKIA", AWS_SECRET_ACCESS_KEY="s")
+    with stack, patch.object(handler.boto3, "client") as boto_client, \
+            patch.object(handler, "DynamoDBScanner", return_value=ddb) as scanner_cls:
+        result = handler.process_bucket("users", "DYNAMODB", "ap-south-1")
+        doc = _read_findings(findings_dir, "users")
+
+    # the S3 credential rules apply: static keys and the region reach the client, which is injected
+    kwargs = boto_client.call_args.kwargs
+    assert kwargs["service_name"] == "dynamodb" and kwargs["region_name"] == "ap-south-1"
+    assert kwargs["aws_access_key_id"] == "AKIA" and kwargs["aws_secret_access_key"] == "s"
+    assert scanner_cls.call_args.args[2] is boto_client.return_value
+    assert ddb.scan.call_args.args[0] == {"table_name": "users", "region": "ap-south-1", "sample_limit": 10000}
+    assert result["status"] == "success" and result["files_scanned"] == 1
+    assert set(doc["findings"]) == {"users"} and doc["findings"]["users"][0]["name"] == "Email"
+    assert doc["account_id"] == "123456789012" and doc["object_type"] == "DYNAMODB"
+
+    # a clean table is recorded with []
+    ddb.scan.return_value = []
+    stack, findings_dir = _isolated(AWS_ACCOUNT_ID="123456789012")
+    with stack, patch.object(handler.boto3, "client"), patch.object(handler, "DynamoDBScanner", return_value=ddb):
+        result = handler.process_bucket("audit", "ddb")
+        doc = _read_findings(findings_dir, "audit")
+    assert result["status"] == "success" and doc["findings"] == {"audit": []}
+
+    # a table the scanner could not read is an error entry, never a clean one
+    failing = MagicMock()
+    failing.stats = {"tables_scanned": 0, "items_scanned": 0, "errors": 0}
+
+    def fail(target):
+        failing.stats["errors"] += 1
+        failing.stats["error_details"] = ["arn:aws:dynamodb:us-east-1:table/ghost: AccessDeniedException"]
+        return []
+
+    failing.scan.side_effect = fail
+    failing.dedup_findings.side_effect = lambda findings: findings
+    stack, findings_dir = _isolated(AWS_ACCOUNT_ID="123456789012")
+    with stack, patch.object(handler.boto3, "client"), patch.object(handler, "DynamoDBScanner", return_value=failing):
+        result = handler.process_bucket("ghost", "DYNAMODB", "us-east-1")
+        doc = _read_findings(findings_dir, "ghost")
+    assert result["status"] == "error" and doc["findings"] == {} and doc["files_scanned"] == 0
+    assert result["errors"] == ["1 error(s) during DynamoDB scan: arn:aws:dynamodb:us-east-1:table/ghost: AccessDeniedException"]
+
+    # an exception outside the scanner is captured, never raised
+    stack, _ = _isolated(AWS_ACCOUNT_ID="123456789012")
+    with stack, patch.object(handler.boto3, "client", side_effect=RuntimeError("no creds")):
+        result = handler.process_bucket("users", "DYNAMODB")
+    assert result["errors"] == ["DynamoDB scan failed: no creds"]

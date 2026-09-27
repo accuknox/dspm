@@ -54,7 +54,7 @@ def _number_env(name: str, default, cast=float):
 # AWS Credentials (optional: falls back to instance profile / IRSA when unset)
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", None)
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
-AWS_ACCOUNT_ID = os.environ.get("AWS_ACCOUNT_ID", None)  # required for S3 targets; recorded in the findings
+AWS_ACCOUNT_ID = os.environ.get("AWS_ACCOUNT_ID", None)  # required for S3 and DynamoDB targets; recorded in the findings
 
 # CSPM backend (findings are uploaded to <CSPM_URL>/api/v1/artifact/)
 CSPM_URL = os.environ.get("CSPM_URL", None)
@@ -66,7 +66,7 @@ LABEL_ID = os.environ.get("LABEL_ID", "test")
 OBJECTS_TO_SCAN = os.environ.get("OBJECTS_TO_SCAN", None)
 OBJECT_TYPE = os.environ.get("OBJECT_TYPE", None)
 OBJECT_NAME = os.environ.get("OBJECT_NAME", None)
-OBJECT_REGION = os.environ.get("OBJECT_REGION", None)  # AWS region for the S3 client
+OBJECT_REGION = os.environ.get("OBJECT_REGION", None)  # AWS region for the S3 and DynamoDB clients
 
 # Database scan settings (used when OBJECT_TYPE is MONGODB|POSTGRES|MYSQL|MARIADB|MSSQL or one of the Azure
 # aliases below; OBJECT_NAME holds the database name to scan)
