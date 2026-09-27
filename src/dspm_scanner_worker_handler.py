@@ -37,6 +37,9 @@ FINDINGS_DIR = OUTPUT_DIR / "findings"
 # OBJECT_TYPE values accepted for S3 buckets
 S3_OBJECT_TYPES = {"S3", "S3BUCKET"}
 
+# OBJECT_TYPE values accepted for DynamoDB tables (one instance = one AWS account and region, like S3)
+DYNAMODB_OBJECT_TYPES = {"DYNAMODB", "DYNAMO", "DDB"}
+
 # OBJECT_TYPE values accepted for Azure Blob Storage / ADLS Gen2 containers
 AZURE_BLOB_OBJECT_TYPES = {"AZURE_BLOB", "AZURE_BLOB_STORAGE", "AZUREBLOB", "BLOB", "ADLS", "ADLS_GEN2", "AZURE_STORAGE"}
 
@@ -301,8 +304,8 @@ def _scan_errors(scanner: Any, label: str) -> Optional[str]:
 
 def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str = None) -> Dict[str, Any]:
     """
-    Process scan for a single target: an S3 bucket, an Azure Blob container, a database
-    (including Cosmos DB) or a SaaS tenant.
+    Process scan for a single target: an S3 bucket, an Azure Blob container, a DynamoDB
+    table, a database (including Cosmos DB) or a SaaS tenant.
     """
     logger.info(f"Starting scan for object: {bucket_name} (type: {object_type})")
 
@@ -374,6 +377,36 @@ def process_bucket(bucket_name: str, object_type: str = "s3", object_region: str
                 logger.error(error)
         except Exception as e:
             errors.append(f"{label} scan failed: {str(e)}")
+            logger.error(errors[-1])
+
+    elif normalized_type in DYNAMODB_OBJECT_TYPES:
+        try:
+            logger.info(f"Creating DynamoDB scanner instance for {bucket_name}")
+            # Same credential rules as S3: static keys if provided, else the ambient chain
+            # (instance profile / IRSA / AWS_PROFILE); the DynamoDB client is regional
+            client_kwargs = {
+                "aws_secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
+                "aws_access_key_id": settings.AWS_ACCESS_KEY_ID,
+                "service_name": "dynamodb",
+            }
+            if object_region:
+                client_kwargs["region_name"] = object_region
+            ddb_scanner = DynamoDBScanner(engine, config, boto3.client(**client_kwargs))
+            target = {"table_name": bucket_name, "region": object_region, "sample_limit": settings.SAMPLE_LIMIT}
+
+            # A table is one unit, like a relation or a collection: recorded even when clean, but a
+            # table the scanner could not read is an error entry, never a clean one
+            errors_before = ddb_scanner.stats.get("errors", 0)
+            table_findings = ddb_scanner.dedup_findings(ddb_scanner.scan(target))
+            if ddb_scanner.stats.get("errors", 0) == errors_before:
+                _record_unit(final_json, findings_file, bucket_name, table_findings)
+
+            error = _scan_errors(ddb_scanner, "DynamoDB")
+            if error:
+                errors.append(error)
+                logger.error(error)
+        except Exception as e:
+            errors.append(f"DynamoDB scan failed: {str(e)}")
             logger.error(errors[-1])
 
     elif normalized_type in DB_OBJECT_TYPES:
@@ -585,10 +618,13 @@ def lambda_handler(event: Dict[str, Any] = None, context: Any = None) -> Dict[st
             }),
         }
 
-    # The Artifact API attributes object-store findings to a cloud account: the AWS account for S3
-    # buckets, the Azure subscription for Blob containers. Database targets don't need one.
-    s3_targets = [name for name, obj_type in objects_dict.items() if str(obj_type).upper() in S3_OBJECT_TYPES]
-    if s3_targets and not settings.AWS_ACCOUNT_ID:
+    # The Artifact API attributes cloud-native findings to an account: the AWS account for S3 buckets
+    # and DynamoDB tables, the Azure subscription for Blob containers. Database targets don't need one.
+    aws_targets = [
+        name for name, obj_type in objects_dict.items()
+        if str(obj_type).upper() in S3_OBJECT_TYPES or str(obj_type).upper() in DYNAMODB_OBJECT_TYPES
+    ]
+    if aws_targets and not settings.AWS_ACCOUNT_ID:
         logger.error("AWS Account ID is not configured. Please configure it in settings.py")
         return {
             "statusCode": 400,

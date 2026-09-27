@@ -1,5 +1,5 @@
-# AWS shared config for the S3 instances (common.env sets AWS_CONFIG_FILE=/etc/dspm/aws-config).
-# One profile per member account; an S3 instance selects its profile with AWS_PROFILE=<name>.
+# AWS shared config for the S3 and DynamoDB instances (common.env sets AWS_CONFIG_FILE=/etc/dspm/aws-config).
+# One profile per member account; an S3 or DynamoDB instance selects its profile with AWS_PROFILE=<name>.
 # credential_source = Ec2InstanceMetadata means: the VM's instance role assumes the member role and
 # boto3 refreshes the session on its own. No access keys anywhere.
 #

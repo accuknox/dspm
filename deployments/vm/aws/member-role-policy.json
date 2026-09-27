@@ -33,6 +33,15 @@
       "Resource": "arn:aws:s3:::*"
     },
     {
+      "Sid": "ScanDynamoDBTablesInThisRegionOnly",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeTable",
+        "dynamodb:Scan"
+      ],
+      "Resource": "arn:aws:dynamodb:REGION:*:table/*"
+    },
+    {
       "Sid": "DecryptSseKmsObjectsViaS3",
       "Effect": "Allow",
       "Action": "kms:Decrypt",

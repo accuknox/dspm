@@ -35,12 +35,12 @@ There are two entry points:
 | Variable | Required | Description |
 |---|---|---|
 | `OBJECT_TYPE` | yes* | Selects the connector, see sections below |
-| `OBJECT_NAME` | yes* | S3 bucket name, Azure Blob container, or database name for the DB connectors |
+| `OBJECT_NAME` | yes* | S3 bucket name, DynamoDB table name, Azure Blob container, or database name for the DB connectors |
 | `OBJECTS_TO_SCAN` | no | Several targets at once: a JSON object `{"name": "type", ...}` (e.g. `{"bucket-a": "s3", "appdb": "postgres"}`) or a JSON list of names that all use `OBJECT_TYPE`. Overrides `OBJECT_NAME`/`OBJECT_TYPE` (\* not needed when set) |
 | `CSPM_URL` | no | CSPM backend base URL; findings upload is skipped when unset |
 | `ARTIFACT_TOKEN` | with `CSPM_URL` | Bearer token for the findings upload (`api/v1/artifact/`) |
 | `LABEL_ID` | no | Label the uploaded findings are filed under in the CSPM backend, default `test` |
-| `OBJECT_REGION` | no | AWS region for the S3 client (applies to every S3 target) |
+| `OBJECT_REGION` | no | AWS region for the S3 and DynamoDB clients (applies to every S3 and DynamoDB target) |
 | `ENABLED_REGIONS` | no | Comma-separated regional compliance packs, default `US,IN,GB` (valid: `US`, `CA`, `GB`, `DE`, `SE`, `FI`, `PL`, `ES`, `IT`, `TR`, `IN`, `SG`, `AU`, `KR`, `TH`, `ZA`, `NG`, `PH`; `UK` is accepted as an alias for `GB`). Also used as the regions for national-format phone numbers |
 | `REPORT_TOKEN_LIKE_VALUES` | no | `false` (default): random-looking tokens with no supporting evidence (credential-named field, `key=`/`token:` keyword, known format) are dropped; `true` keeps them as `possible` candidates reported as `Secret.TokenLikeValue` (Medium) when a whole column is made of them |
 | `MIN_CONFIDENCE` | no | Lowest confidence tier reported: `possible`, `likely` (default) or `very_likely` (see *Classification* below). The legacy `SCORE_THRESHOLD` float is still accepted (`0.9` → `very_likely`, `0.8` → `likely`, lower → `possible`) |
@@ -113,7 +113,17 @@ All non-`system.*` collections of the database are discovered and scanned, up to
 
 > Reaching a replica set through `kubectl port-forward` / an SSH tunnel: the members advertise cluster-internal hostnames (`…rs0-0.…svc.cluster.local`) that do not resolve locally, so topology discovery fails with *Could not reach any servers*. The scanner adds `directConnection=true` automatically when `DB_HOST` is `localhost`/`127.0.0.1`; with `DB_URI`, append `?directConnection=true` yourself.
 
-> DynamoDB is currently only available through the master handler, not through worker mode.
+### DynamoDB
+
+| Variable | Required | Description |
+|---|---|---|
+| `OBJECT_TYPE` | yes | `DYNAMODB` (or `DDB`) |
+| `OBJECT_NAME` | yes | Table name; `OBJECTS_TO_SCAN` lists several tables of the same account and region |
+| `OBJECT_REGION` | yes* | Region of the tables; the DynamoDB client is regional (\* or `AWS_DEFAULT_REGION` / the profile's `region`) |
+| `AWS_ACCOUNT_ID` | yes | Account that owns the tables; recorded in the findings and required by the CSPM backend |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | no | Static keys, exactly as for S3; leave unset for the instance profile / IRSA, or `AWS_PROFILE` for an assume-role profile |
+
+One table is one unit, like a relation or a collection: a `Scan` reads up to `SAMPLE_LIMIT` items (10 000), which counts against the table's read capacity, and every item is classified like a MongoDB document (attribute paths as context, nested maps and lists walked). The identity needs `dynamodb:Scan` on the tables (`dynamodb:DescribeTable` for a preflight); `deployments/vm/aws/member-role-policy.json` grants both for one region. Change-data capture through DynamoDB Streams remains a master-mode feature.
 
 ### Azure Database for PostgreSQL / MySQL, Azure SQL, Cosmos DB for MongoDB
 
