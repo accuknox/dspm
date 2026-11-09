@@ -21,6 +21,17 @@ parsers (src/scanners/files), exactly like the S3 connector. One Drive file
 is one unit; workbooks and archives fan out per sheet / member inside the
 parsers.
 
+Oversized native files: files.export is capped at 10 MB by Google
+(exportSizeLimitExceeded) and the cap cannot be raised. Two fallbacks, in
+order: (1) the editors' own export endpoint
+(docs.google.com/<kind>/d/<id>/export?format=...), which the same
+drive.readonly token is accepted on, is not subject to the Drive API cap and
+yields the identical docx/xlsx/txt - verified live on a 16 MB Sheet in Oct
+2026; (2) the editor APIs - Sheets values.get in row chunks (rebuilt as a
+local .xlsx so sheet names and row numbers stay identical), Docs
+documents.get and Slides presentations.get (text only) - which have no cap
+either but must be enabled in the service account's GCP project.
+
 Auth: a service-account key file (target/sa_key_file, or the standard
 GOOGLE_APPLICATION_CREDENTIALS), optionally impersonating a Workspace user
 (target/impersonate_user, requires domain-wide delegation) to see that
@@ -29,6 +40,7 @@ key file, Application Default Credentials are used.
 """
 import os
 from typing import Any, Dict, Iterator, List, Optional, Tuple
+from urllib.parse import quote
 
 # Conditional imports for soft failures, like pymongo in the Mongo connector
 try:
@@ -46,6 +58,9 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 DRIVE_API = "https://www.googleapis.com/drive/v3"
+SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
+DOCS_API = "https://docs.googleapis.com/v1/documents"
+SLIDES_API = "https://slides.googleapis.com/v1/presentations"
 DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly"  # read-only by construction
 
 GOOGLE_MIME_PREFIX = "application/vnd.google-apps."
@@ -65,6 +80,15 @@ EXPORT_FORMATS = {
 }
 
 MAX_FILE_BYTES = 100 * 1024 * 1024  # same guard as the S3 connector
+EXPORT_SIZE_LIMIT_REASON = "exportSizeLimitExceeded"  # Drive's fixed 10 MB files.export cap
+# Editor export endpoint for oversized files: Google MIME -> (URL kind, format, expected content-type marker)
+EDITOR_EXPORT = {
+    "application/vnd.google-apps.document": ("document", "docx", "wordprocessingml"),
+    "application/vnd.google-apps.spreadsheet": ("spreadsheets", "xlsx", "spreadsheetml"),
+    "application/vnd.google-apps.presentation": ("presentation", "txt", "text/plain"),
+}
+SHEETS_ROW_CHUNK = 10_000  # rows per values.get call when rebuilding an oversized spreadsheet
+XLSX_TITLE_BAD_CHARS = set("[]:*?/\\")
 PAGE_SIZE = 1000
 LIST_FIELDS = "nextPageToken, files(id, name, mimeType, size, modifiedTime)"
 
@@ -80,6 +104,52 @@ def _error_reason(resp: Any) -> str:
     except Exception:
         text = (getattr(resp, "text", "") or "").strip()
         return f"({text[:150]})" if text else ""
+
+
+def _xlsx_sheet_title(title: str, taken: set) -> str:
+    """Excel's sheet-name rules (31 chars, no []:*?/\\, unique) applied to a Google sheet title."""
+    cleaned = "".join("_" if ch in XLSX_TITLE_BAD_CHARS else ch for ch in str(title)).strip("'") or "Sheet"
+    candidate = cleaned[:31]
+    n = 1
+    while candidate in taken:
+        n += 1
+        suffix = f"~{n}"
+        candidate = cleaned[: 31 - len(suffix)] + suffix
+    taken.add(candidate)
+    return candidate
+
+
+def _docs_text(elements: Any, out: List[str]) -> None:
+    """Flattens Docs API structural elements (paragraphs, tables, TOC) into text lines."""
+    for element in elements or []:
+        if "paragraph" in element:
+            out.append(
+                "".join(
+                    run.get("textRun", {}).get("content", "") for run in element["paragraph"].get("elements", [])
+                ),
+            )
+        elif "table" in element:
+            for row in element["table"].get("tableRows", []):
+                for cell in row.get("tableCells", []):
+                    _docs_text(cell.get("content"), out)
+        elif "tableOfContents" in element:
+            _docs_text(element["tableOfContents"].get("content"), out)
+
+
+def _slides_text(page_elements: Any, out: List[str]) -> None:
+    """Flattens Slides API page elements (shapes, tables, groups) into text lines."""
+    def runs(text: Dict[str, Any]) -> str:
+        return "".join(te.get("textRun", {}).get("content", "") for te in text.get("textElements", []))
+
+    for element in page_elements or []:
+        if "shape" in element:
+            out.append(runs(element["shape"].get("text", {})))
+        elif "table" in element:
+            for row in element["table"].get("tableRows", []):
+                for cell in row.get("tableCells", []):
+                    out.append(runs(cell.get("text", {})))
+        elif "elementGroup" in element:
+            _slides_text(element["elementGroup"].get("children"), out)
 
 
 def _safe_name(name: str, forced_ext: Optional[str]) -> str:
@@ -232,28 +302,33 @@ class GoogleDriveScanner(BaseScanner):
         )
         temp_dir = self.workdir(resource_id)
         try:
-            if mime in EXPORT_FORMATS:
+            if exported:
                 export_mime, ext = EXPORT_FORMATS[mime]
                 local_path = os.path.join(temp_dir, _safe_name(name, ext))
                 resp = session.get(
                     f"{DRIVE_API}/files/{file_id}/export",
                     params={"mimeType": export_mime}, timeout=120,
                 )
+                if resp.status_code == 403 and EXPORT_SIZE_LIMIT_REASON in _error_reason(resp):
+                    # Google's 10 MB export cap cannot be raised: rebuild the file from the
+                    # editor API (Sheets/Docs/Slides), which has no cap and takes the same scope.
+                    logger.info(f"[{index}] '{name}' exceeds the 10 MB export cap; using the editor export / editor API fallback")
+                    local_path = self._fetch_oversized_native(session, file_id, mime, name, temp_dir)
+                    resp = None
             else:
                 local_path = os.path.join(temp_dir, _safe_name(name, None))
                 resp = session.get(
                     f"{DRIVE_API}/files/{file_id}",
                     params={"alt": "media", "supportsAllDrives": "true"}, timeout=300,
                 )
-            if resp.status_code >= 300:
-                # Surface Google's reason: export 403s are usually exportSizeLimitExceeded
-                # (the 10 MB export cap on Docs/Sheets/Slides) rather than a permission gap.
-                reason = _error_reason(resp)
-                self.record_error(f"{resource_id}: HTTP {resp.status_code} {reason}")
-                logger.error(f"Failed to fetch {resource_id}: HTTP {resp.status_code} {reason}")
-                return
-            with open(local_path, "wb") as fh:
-                fh.write(resp.content)
+            if resp is not None:
+                if resp.status_code >= 300:
+                    reason = _error_reason(resp)
+                    self.record_error(f"{resource_id}: HTTP {resp.status_code} {reason}")
+                    logger.error(f"Failed to fetch {resource_id}: HTTP {resp.status_code} {reason}")
+                    return
+                with open(local_path, "wb") as fh:
+                    fh.write(resp.content)
 
             findings = self.scan_local_file(local_path, resource_id)
             self.stats["files_scanned"] += 1
@@ -265,3 +340,129 @@ class GoogleDriveScanner(BaseScanner):
             logger.error(f"Error scanning Drive file {resource_id}: {str(e)}")
         finally:
             self.discard_workdir(temp_dir)
+
+    # ------------------------------------------------------------------ oversized native files
+    def _fetch_oversized_native(self, session, file_id: str, mime: str, name: str, temp_dir: str) -> str:
+        """
+        Materialises a Google-native file that files.export refused with
+        exportSizeLimitExceeded, using the matching editor API. Returns the
+        local path; raises RuntimeError with Google's reason on API errors.
+        """
+        direct = self._fetch_via_editor_export(session, file_id, mime, name, temp_dir)
+        if direct:
+            return direct
+        if mime == "application/vnd.google-apps.spreadsheet":
+            return self._fetch_spreadsheet_via_sheets_api(session, file_id, name, temp_dir)
+        if mime == "application/vnd.google-apps.document":
+            doc = self._editor_api_json(session, f"{DOCS_API}/{file_id}", {}, "Docs")
+            lines: List[str] = []
+            _docs_text(doc.get("body", {}).get("content"), lines)
+            for section in ("headers", "footers", "footnotes"):
+                for part in (doc.get(section) or {}).values():
+                    _docs_text(part.get("content"), lines)
+            return self._write_text(temp_dir, name, lines)
+        if mime == "application/vnd.google-apps.presentation":
+            deck = self._editor_api_json(
+                session, f"{SLIDES_API}/{file_id}",
+                {"fields": "slides(pageElements,slideProperties.notesPage.pageElements)"}, "Slides",
+            )
+            lines = []
+            for slide in deck.get("slides", []):
+                _slides_text(slide.get("pageElements"), lines)
+                _slides_text(slide.get("slideProperties", {}).get("notesPage", {}).get("pageElements"), lines)
+            return self._write_text(temp_dir, name, lines)
+        raise RuntimeError(f"no oversized-file fallback for {mime}")
+
+    def _fetch_via_editor_export(self, session, file_id: str, mime: str, name: str, temp_dir: str) -> Optional[str]:
+        """
+        First fallback: the editors' export endpoint (what "File > Download"
+        uses), which takes the same OAuth token, needs no extra API enabled
+        and has no 10 MB cap. Returns None when it does not deliver the
+        expected format (sign-in page, error), so the caller moves on to the
+        editor API.
+        """
+        kind, fmt, marker = EDITOR_EXPORT[mime]
+        try:
+            resp = session.get(f"https://docs.google.com/{kind}/d/{file_id}/export", params={"format": fmt}, timeout=600)
+        except Exception as e:
+            logger.info(f"Editor export of {file_id} failed ({str(e)[:120]}); trying the editor API")
+            return None
+        content_type = (getattr(resp, "headers", None) or {}).get("content-type", "") or ""
+        if resp.status_code != 200 or marker not in content_type:
+            logger.info(
+                f"Editor export of {file_id} returned HTTP {resp.status_code} ({content_type or 'no content-type'}); "
+                "trying the editor API",
+            )
+            return None
+        local_path = os.path.join(temp_dir, _safe_name(name, "." + fmt))
+        with open(local_path, "wb") as fh:
+            fh.write(resp.content)
+        return local_path
+
+    def _fetch_spreadsheet_via_sheets_api(self, session, file_id: str, name: str, temp_dir: str) -> str:
+        """
+        Rebuilds the workbook as a local .xlsx from Sheets values.get, one
+        values call per SHEETS_ROW_CHUNK rows, so the xlsx parser yields the
+        same '[sheet]' units and 'Row N' locations as a regular export would.
+        values.get trims trailing empty rows per call; blank rows are written
+        back only when data follows them, so row numbers stay exact without
+        materialising a sheet's empty tail.
+        """
+        from openpyxl import Workbook  # local import keeps the module import-light
+
+        meta = self._editor_api_json(
+            session, f"{SHEETS_API}/{file_id}",
+            {"fields": "sheets.properties(title,sheetType,gridProperties(rowCount))"}, "Sheets",
+        )
+        workbook = Workbook(write_only=True)
+        taken: set = set()
+        chunk = int(self.config.get("sheets_row_chunk", SHEETS_ROW_CHUNK))
+        for sheet in meta.get("sheets", []):
+            props = sheet.get("properties", {})
+            if props.get("sheetType", "GRID") != "GRID":
+                continue  # chart-only sheets hold no cells
+            title = props.get("title", "Sheet")
+            row_count = int((props.get("gridProperties") or {}).get("rowCount") or 0)
+            worksheet = workbook.create_sheet(title=_xlsx_sheet_title(title, taken))
+            quoted = "'" + title.replace("'", "''") + "'"
+            pending_blank = 0
+            start = 1
+            while start <= row_count:
+                end = min(start + chunk - 1, row_count)
+                data = self._editor_api_json(
+                    session, f"{SHEETS_API}/{file_id}/values/{quote(f'{quoted}!{start}:{end}', safe='')}",
+                    {"majorDimension": "ROWS", "valueRenderOption": "FORMATTED_VALUE"}, "Sheets",
+                )
+                rows = data.get("values") or []
+                if rows:
+                    for _ in range(pending_blank):
+                        worksheet.append([])
+                    for row in rows:
+                        worksheet.append(["" if v is None else str(v) for v in row])
+                    pending_blank = (end - start + 1) - len(rows)
+                else:
+                    pending_blank += end - start + 1
+                start = end + 1
+        if not taken:
+            workbook.create_sheet(title="Sheet1")
+        local_path = os.path.join(temp_dir, _safe_name(name, ".xlsx"))
+        workbook.save(local_path)
+        return local_path
+
+    @staticmethod
+    def _editor_api_json(session, url: str, params: Dict[str, Any], api: str) -> Dict[str, Any]:
+        resp = session.get(url, params=params, timeout=120)
+        if resp.status_code >= 300:
+            reason = _error_reason(resp)
+            hint = ""
+            if "accessNotConfigured" in reason or "SERVICE_DISABLED" in reason or "has not been used" in reason:
+                hint = f" - enable the Google {api} API in the service account's GCP project"
+            raise RuntimeError(f"{api} API HTTP {resp.status_code} {reason}{hint}")
+        return resp.json() or {}
+
+    @staticmethod
+    def _write_text(temp_dir: str, name: str, lines: List[str]) -> str:
+        local_path = os.path.join(temp_dir, _safe_name(name, ".txt"))
+        with open(local_path, "w", encoding="utf-8") as fh:
+            fh.write("".join(line if line.endswith("\n") else line + "\n" for line in lines))
+        return local_path
